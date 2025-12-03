@@ -17,18 +17,18 @@ export function FloatingActionButtons({
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
       <Button
-        variant="default"
+        variant="outline"
         size="lg"
-        className="gap-2 shadow-lg"
+        className="gap-2 shadow-lg bg-background"
         onClick={onAddPosition}
       >
         <Plus className="w-5 h-5" />
         <span>Position</span>
       </Button>
       <Button
-        variant="secondary"
+        variant="outline"
         size="lg"
-        className="gap-2 shadow-lg"
+        className="gap-2 shadow-lg bg-background"
         onClick={onAddPerson}
       >
         <UserPlus className="w-5 h-5" />
