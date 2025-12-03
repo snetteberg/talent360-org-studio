@@ -1,9 +1,8 @@
-import { Plus, Move, Scissors, Eye } from 'lucide-react';
+import { Plus, Scissors, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface NodePopoverProps {
   onAddSubPosition: () => void;
-  onMove: () => void;
   onCut: () => void;
   onViewDetails: () => void;
   isBaseline: boolean;
@@ -11,7 +10,6 @@ interface NodePopoverProps {
 
 export function NodePopover({
   onAddSubPosition,
-  onMove,
   onCut,
   onViewDetails,
   isBaseline,
@@ -29,15 +27,6 @@ export function NodePopover({
             >
               <Plus className="w-4 h-4" />
               Add Sub-Position
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="justify-start gap-2 h-8 text-sm font-normal"
-              onClick={onMove}
-            >
-              <Move className="w-4 h-4" />
-              Move
             </Button>
             <Button
               variant="ghost"

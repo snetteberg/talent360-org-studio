@@ -11,7 +11,7 @@ interface OrgCanvasProps {
   onSelectNode: (nodeId: string | null) => void;
   onViewDetails: (nodeId: string) => void;
   onAddSubPosition: (parentId: string) => void;
-  onMoveNode: (nodeId: string) => void;
+  onMoveNode: (nodeId: string, newParentId: string) => void;
   onCutNode: (nodeId: string) => void;
   isBaseline: boolean;
 }
@@ -32,6 +32,12 @@ export function OrgCanvas({
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
 
+  // Drag and drop state
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null);
+  const [hasDragStarted, setHasDragStarted] = useState(false);
+
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 2));
   const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.5));
   const handleFit = () => {
@@ -50,8 +56,8 @@ export function OrgCanvas({
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Left click to start panning
-    if (e.button === 0) {
+    // Only start canvas panning if not dragging a node
+    if (e.button === 0 && !draggingNodeId) {
       setIsPanning(true);
       setHasDragged(false);
       setDragStart({ x: e.clientX, y: e.clientY });
@@ -60,10 +66,19 @@ export function OrgCanvas({
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isPanning && dragStart) {
+    // Check if we should start node dragging (after threshold)
+    if (dragStartPos && draggingNodeId && !hasDragStarted) {
+      const dx = Math.abs(e.clientX - dragStartPos.x);
+      const dy = Math.abs(e.clientY - dragStartPos.y);
+      if (dx > 5 || dy > 5) {
+        setHasDragStarted(true);
+      }
+    }
+
+    // Canvas panning
+    if (isPanning && dragStart && !draggingNodeId) {
       const dx = Math.abs(e.clientX - dragStart.x);
       const dy = Math.abs(e.clientY - dragStart.y);
-      // Consider it a drag if moved more than 5px
       if (dx > 5 || dy > 5) {
         setHasDragged(true);
       }
@@ -75,20 +90,53 @@ export function OrgCanvas({
   };
 
   const handleMouseUp = () => {
+    // Handle node drop
+    if (draggingNodeId && dropTargetId && hasDragStarted && !isBaseline) {
+      // Don't allow dropping on self or descendants
+      if (draggingNodeId !== dropTargetId && !isDescendant(draggingNodeId, dropTargetId)) {
+        onMoveNode(draggingNodeId, dropTargetId);
+      }
+    }
+    
     setIsPanning(false);
     setDragStart(null);
+    setDraggingNodeId(null);
+    setDropTargetId(null);
+    setDragStartPos(null);
+    setHasDragStarted(false);
+  };
+
+  // Check if targetId is a descendant of nodeId
+  const isDescendant = (nodeId: string, targetId: string): boolean => {
+    const node = scenario.nodes[nodeId];
+    if (!node) return false;
+    if (node.children.includes(targetId)) return true;
+    return node.children.some(childId => isDescendant(childId, targetId));
+  };
+
+  // Handle node drag start
+  const handleNodeDragStart = (nodeId: string, e: React.MouseEvent) => {
+    if (isBaseline) return;
+    setDraggingNodeId(nodeId);
+    setDragStartPos({ x: e.clientX, y: e.clientY });
+  };
+
+  // Handle node drag end
+  const handleNodeDragEnd = () => {
+    if (!hasDragStarted && draggingNodeId) {
+      // It was just a click, not a drag
+      onSelectNode(draggingNodeId);
+    }
   };
 
   // Handle wheel zoom and two-finger pinch
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     
-    // Pinch zoom (ctrlKey is true for pinch gestures on trackpads)
     if (e.ctrlKey) {
       const delta = -e.deltaY * 0.01;
       setZoom(z => Math.min(Math.max(z + delta, 0.5), 2));
     } else {
-      // Regular scroll to pan
       setPan(p => ({
         x: p.x - e.deltaX,
         y: p.y - e.deltaY,
@@ -118,7 +166,6 @@ export function OrgCanvas({
     const positions: Record<string, { x: number; y: number }> = {};
     const connections: { from: string; to: string }[] = [];
 
-    // BFS to calculate positions
     const calculateSubtreeWidth = (nodeId: string): number => {
       const node = nodes[nodeId];
       if (!node || node.children.length === 0) return nodeWidth;
@@ -161,7 +208,6 @@ export function OrgCanvas({
 
   const { positions, connections } = calculateLayout();
 
-  // Calculate canvas dimensions
   const canvasBounds = Object.values(positions).reduce(
     (bounds, pos) => ({
       minX: Math.min(bounds.minX, pos.x),
@@ -174,6 +220,13 @@ export function OrgCanvas({
 
   const canvasWidth = Math.max(1200, canvasBounds.maxX - canvasBounds.minX + 200);
   const canvasHeight = Math.max(800, canvasBounds.maxY - canvasBounds.minY + 200);
+
+  // Determine cursor based on state
+  const getCursor = () => {
+    if (draggingNodeId && hasDragStarted) return 'grabbing';
+    if (isPanning) return 'grabbing';
+    return 'grab';
+  };
 
   return (
     <div className="relative flex-1 overflow-hidden org-canvas">
@@ -194,11 +247,20 @@ export function OrgCanvas({
         </Button>
       </div>
 
+      {/* Drag hint */}
+      {draggingNodeId && hasDragStarted && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-card border border-border rounded-lg px-4 py-2 shadow-medium">
+          <p className="text-sm text-muted-foreground">
+            Drop on another position to move
+          </p>
+        </div>
+      )}
+
       {/* Canvas */}
       <div
         ref={canvasRef}
         className="w-full h-full overflow-hidden select-none"
-        style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
+        style={{ cursor: getCursor() }}
         onClick={handleCanvasClick}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -245,6 +307,9 @@ export function OrgCanvas({
             const node = scenario.nodes[nodeId];
             if (!node) return null;
 
+            const isDragging = draggingNodeId === nodeId && hasDragStarted;
+            const isDropTarget = dropTargetId === nodeId && draggingNodeId && draggingNodeId !== nodeId && !isDescendant(draggingNodeId, nodeId);
+
             return (
               <div
                 key={nodeId}
@@ -254,13 +319,35 @@ export function OrgCanvas({
                 <OrgNode
                   node={node}
                   isSelected={selectedNodeId === nodeId}
-                  onClick={() => onSelectNode(nodeId)}
+                  isDragging={isDragging}
+                  isDropTarget={isDropTarget}
+                  onClick={() => {
+                    if (!hasDragStarted) {
+                      onSelectNode(nodeId);
+                    }
+                  }}
+                  onDragStart={(e) => handleNodeDragStart(nodeId, e)}
+                  onDragEnd={handleNodeDragEnd}
+                  onDrop={() => {
+                    if (draggingNodeId && draggingNodeId !== nodeId) {
+                      // Drop handled in handleMouseUp
+                    }
+                  }}
+                  onDragOver={() => {
+                    if (draggingNodeId && draggingNodeId !== nodeId && hasDragStarted) {
+                      setDropTargetId(nodeId);
+                    }
+                  }}
+                  onDragLeave={() => {
+                    if (dropTargetId === nodeId) {
+                      setDropTargetId(null);
+                    }
+                  }}
                 />
-                {selectedNodeId === nodeId && (
+                {selectedNodeId === nodeId && !isDragging && (
                   <div className="absolute left-full top-0 ml-2 z-20">
                     <NodePopover
                       onAddSubPosition={() => onAddSubPosition(nodeId)}
-                      onMove={() => onMoveNode(nodeId)}
                       onCut={() => onCutNode(nodeId)}
                       onViewDetails={() => onViewDetails(nodeId)}
                       isBaseline={isBaseline}
