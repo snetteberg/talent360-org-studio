@@ -164,8 +164,50 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
     toast.success(`Added position: ${position.title}`);
   };
 
-  const handleMoveNode = (nodeId: string) => {
-    toast.info('Click on a node to move this position under it');
+  const handleMoveNode = (nodeId: string, newParentId: string) => {
+    if (isBaseline) return;
+    
+    const node = activeScenario.nodes[nodeId];
+    if (!node || nodeId === newParentId) return;
+
+    setScenarios(prev =>
+      prev.map(s => {
+        if (s.id !== activeScenarioId) return s;
+        
+        const updatedNodes = { ...s.nodes };
+        
+        // Remove from old parent's children
+        if (node.parentId && updatedNodes[node.parentId]) {
+          updatedNodes[node.parentId] = {
+            ...updatedNodes[node.parentId],
+            children: updatedNodes[node.parentId].children.filter(id => id !== nodeId),
+          };
+        }
+        
+        // Add to new parent's children
+        if (updatedNodes[newParentId]) {
+          updatedNodes[newParentId] = {
+            ...updatedNodes[newParentId],
+            children: [...updatedNodes[newParentId].children, nodeId],
+          };
+        }
+        
+        // Update node's parent
+        updatedNodes[nodeId] = {
+          ...updatedNodes[nodeId],
+          parentId: newParentId,
+        };
+
+        return {
+          ...s,
+          nodes: updatedNodes,
+        };
+      })
+    );
+
+    const movedNode = activeScenario.nodes[nodeId];
+    const newParent = activeScenario.nodes[newParentId];
+    toast.success(`Moved ${movedNode?.position.title || 'position'} under ${newParent?.position.title || 'new parent'}`);
   };
 
   const handleCutNode = (nodeId: string) => {

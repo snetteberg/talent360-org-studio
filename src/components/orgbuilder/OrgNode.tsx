@@ -5,11 +5,28 @@ import { cn } from '@/lib/utils';
 interface OrgNodeProps {
   node: OrgNodeType;
   isSelected: boolean;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
   onClick: () => void;
-  onDragStart?: () => void;
+  onDragStart: (e: React.MouseEvent) => void;
+  onDragEnd: () => void;
+  onDrop: () => void;
+  onDragOver: () => void;
+  onDragLeave: () => void;
 }
 
-export function OrgNode({ node, isSelected, onClick, onDragStart }: OrgNodeProps) {
+export function OrgNode({ 
+  node, 
+  isSelected, 
+  isDragging,
+  isDropTarget,
+  onClick, 
+  onDragStart,
+  onDragEnd,
+  onDrop,
+  onDragOver,
+  onDragLeave,
+}: OrgNodeProps) {
   const isFilled = !!node.employee;
   const initials = node.employee?.name
     .split(' ')
@@ -17,16 +34,35 @@ export function OrgNode({ node, isSelected, onClick, onDragStart }: OrgNodeProps
     .join('')
     .toUpperCase();
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Prevent canvas panning when clicking on a node
+    e.stopPropagation();
+    onDragStart(e);
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDrop();
+  };
+
   return (
     <div
       className={cn(
-        'org-node w-[180px] p-3 cursor-pointer select-none',
+        'org-node w-[180px] p-3 select-none transition-all',
         isFilled ? 'org-node-filled' : 'org-node-open',
-        isSelected && 'ring-2 ring-primary shadow-medium'
+        isSelected && 'ring-2 ring-primary shadow-medium',
+        isDragging && 'opacity-50 scale-95 cursor-grabbing',
+        isDropTarget && 'ring-2 ring-success bg-success/10 scale-105',
+        !isDragging && 'cursor-grab'
       )}
-      onClick={onClick}
-      draggable
-      onDragStart={onDragStart}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseEnter={onDragOver}
+      onMouseLeave={onDragLeave}
     >
       <div className="flex items-start gap-3">
         {/* Avatar */}
