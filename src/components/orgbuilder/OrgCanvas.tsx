@@ -39,21 +39,34 @@ export function OrgCanvas({
     setPan({ x: 0, y: 0 });
   };
 
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [hasDragged, setHasDragged] = useState(false);
+
   const handleCanvasClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('org-canvas-inner')) {
+    // Only deselect if we didn't drag
+    if (!hasDragged && (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('org-canvas-inner'))) {
       onSelectNode(null);
     }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 1 || (e.button === 0 && e.altKey)) {
+    // Left click to start panning
+    if (e.button === 0) {
       setIsPanning(true);
+      setHasDragged(false);
+      setDragStart({ x: e.clientX, y: e.clientY });
       setStartPan({ x: e.clientX - pan.x, y: e.clientY - pan.y });
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isPanning) {
+    if (isPanning && dragStart) {
+      const dx = Math.abs(e.clientX - dragStart.x);
+      const dy = Math.abs(e.clientY - dragStart.y);
+      // Consider it a drag if moved more than 5px
+      if (dx > 5 || dy > 5) {
+        setHasDragged(true);
+      }
       setPan({
         x: e.clientX - startPan.x,
         y: e.clientY - startPan.y,
@@ -63,7 +76,33 @@ export function OrgCanvas({
 
   const handleMouseUp = () => {
     setIsPanning(false);
+    setDragStart(null);
   };
+
+  // Handle wheel zoom and two-finger pinch
+  const handleWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault();
+    
+    // Pinch zoom (ctrlKey is true for pinch gestures on trackpads)
+    if (e.ctrlKey) {
+      const delta = -e.deltaY * 0.01;
+      setZoom(z => Math.min(Math.max(z + delta, 0.5), 2));
+    } else {
+      // Regular scroll to pan
+      setPan(p => ({
+        x: p.x - e.deltaX,
+        y: p.y - e.deltaY,
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', handleWheel);
+  }, [handleWheel]);
 
   // Calculate tree layout
   const calculateLayout = useCallback(() => {
@@ -158,7 +197,7 @@ export function OrgCanvas({
       {/* Canvas */}
       <div
         ref={canvasRef}
-        className="w-full h-full overflow-auto cursor-grab"
+        className="w-full h-full overflow-hidden select-none"
         style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
         onClick={handleCanvasClick}
         onMouseDown={handleMouseDown}
