@@ -6,6 +6,8 @@ import { FreeAgentsDrawer } from './FreeAgentsDrawer';
 import { AddPositionModal } from './AddPositionModal';
 import { AddPersonModal } from './AddPersonModal';
 import { CreateScenarioModal } from './CreateScenarioModal';
+import { FloatingHealthPill } from './FloatingHealthPill';
+import { FloatingActionButtons } from './FloatingActionButtons';
 import { Scenario, OrgHealth, PanelContent, Employee, OrgNode } from '@/types/org-builder';
 import { createBaselineScenario, mockHealthFlags } from '@/data/mock-org-data';
 import { toast } from 'sonner';
@@ -252,21 +254,28 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
         activeScenarioId={activeScenarioId}
         onScenarioChange={handleScenarioChange}
         onCreateScenario={() => setShowCreateScenario(true)}
-        health={health}
-        onHealthClick={() => setPanelContent({ type: 'health' })}
         freeAgentCount={activeScenario.freeAgents.length}
         onFreeAgentsClick={() => setShowFreeAgents(true)}
         onUndo={handleUndo}
         onRedo={handleRedo}
         onSave={handleSave}
+        canUndo={historyIndex > 0}
+        canRedo={historyIndex < history.length - 1}
+        isBaseline={isBaseline}
+      />
+
+      <FloatingHealthPill
+        health={health}
+        onClick={() => setPanelContent({ type: 'health' })}
+      />
+
+      <FloatingActionButtons
         onAddPosition={() => {
           setAddPositionParentId(activeScenario.rootId);
           setShowAddPosition(true);
         }}
         onAddPerson={() => setShowAddPerson(true)}
-        canUndo={historyIndex > 0}
-        canRedo={historyIndex < history.length - 1}
-        isBaseline={isBaseline}
+        disabled={isBaseline}
       />
 
       <div className="flex flex-1 overflow-hidden">
