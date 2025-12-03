@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,77 +22,62 @@ import {
 interface AddPositionModalProps {
   open: boolean;
   onClose: () => void;
-  onAdd: (position: { title: string; description: string; department: string }) => void;
+  onAdd: (position: { title: string; description: string; level: string; skills: string[] }) => void;
   parentTitle?: string;
 }
 
-const roleTemplates = [
-  { id: 'custom', label: 'Custom Role' },
-  { id: 'manager', label: 'Manager Template' },
-  { id: 'director', label: 'Director Template' },
-  { id: 'analyst', label: 'Analyst Template' },
-  { id: 'engineer', label: 'Engineer Template' },
-];
-
-const departments = [
-  'Executive',
-  'Technology',
-  'Operations',
-  'Finance',
-  'HR',
-  'Sales',
-  'Marketing',
-  'Legal',
+const roleLevels = [
+  'Professional',
+  'Sr Professional',
+  'Manager',
+  'Director',
+  'Sr Director',
+  'Executive Director',
+  'VP',
 ];
 
 export function AddPositionModal({ open, onClose, onAdd, parentTitle }: AddPositionModalProps) {
   const [title, setTitle] = useState('');
+  const [level, setLevel] = useState('');
   const [description, setDescription] = useState('');
-  const [department, setDepartment] = useState('');
-  const [template, setTemplate] = useState('custom');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
-  const handleTemplateChange = (value: string) => {
-    setTemplate(value);
-    if (value === 'manager') {
-      setTitle('Manager');
-      setDescription('Lead and manage a team to achieve departmental objectives.');
-    } else if (value === 'director') {
-      setTitle('Director');
-      setDescription('Oversee multiple teams and drive strategic initiatives.');
-    } else if (value === 'analyst') {
-      setTitle('Analyst');
-      setDescription('Analyze data and provide insights to support decision-making.');
-    } else if (value === 'engineer') {
-      setTitle('Engineer');
-      setDescription('Design, develop, and maintain technical solutions.');
-    }
+  const handleReset = () => {
+    setTitle('');
+    setLevel('');
+    setDescription('');
   };
 
-  const handleGenerateDescription = () => {
-    setIsGenerating(true);
-    // Simulate AI generation
+  const handleClose = () => {
+    handleReset();
+    onClose();
+  };
+
+  const handleAICreate = () => {
+    if (!title || !level) return;
+
+    setIsCreating(true);
+    
+    // Simulate AI generation - in production this would call an AI service
     setTimeout(() => {
-      setDescription(
-        `Lead and coordinate ${title || 'team'} initiatives, ensuring alignment with organizational goals. Drive performance through effective management, stakeholder collaboration, and continuous improvement.`
-      );
-      setIsGenerating(false);
-    }, 1000);
-  };
-
-  const handleSubmit = () => {
-    if (title && department) {
-      onAdd({ title, description, department });
-      setTitle('');
-      setDescription('');
-      setDepartment('');
-      setTemplate('custom');
+      const generatedDescription = generateRoleDescription(title, level, description);
+      const generatedSkills = generateSkillsForRole(title, level);
+      
+      onAdd({
+        title,
+        level,
+        description: generatedDescription,
+        skills: generatedSkills,
+      });
+      
+      setIsCreating(false);
+      handleReset();
       onClose();
-    }
+    }, 1500);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>Add New Position</DialogTitle>
@@ -105,41 +90,25 @@ export function AddPositionModal({ open, onClose, onAdd, parentTitle }: AddPosit
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="template">Role Template</Label>
-            <Select value={template} onValueChange={handleTemplateChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a template" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                {roleTemplates.map(t => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="title">Role Title</Label>
             <Input
               id="title"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="e.g., Senior Product Manager"
+              placeholder="e.g., Product Manager"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="department">Department</Label>
-            <Select value={department} onValueChange={setDepartment}>
+            <Label htmlFor="level">Role Level</Label>
+            <Select value={level} onValueChange={setLevel}>
               <SelectTrigger>
-                <SelectValue placeholder="Select department" />
+                <SelectValue placeholder="Select level" />
               </SelectTrigger>
               <SelectContent className="bg-popover">
-                {departments.map(d => (
-                  <SelectItem key={d} value={d}>
-                    {d}
+                {roleLevels.map(l => (
+                  <SelectItem key={l} value={l}>
+                    {l}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -147,39 +116,101 @@ export function AddPositionModal({ open, onClose, onAdd, parentTitle }: AddPosit
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="description">Description</Label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 h-7 text-xs"
-                onClick={handleGenerateDescription}
-                disabled={isGenerating}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                {isGenerating ? 'Generating...' : 'AI Generate'}
-              </Button>
-            </div>
+            <Label htmlFor="description">Role Description</Label>
             <Textarea
               id="description"
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="Describe the role responsibilities..."
+              placeholder="Brief description of the role (optional - AI will expand)"
               rows={3}
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!title || !department}>
-            Add Position
+          <Button 
+            onClick={handleAICreate} 
+            disabled={!title || !level || isCreating}
+            className="gap-2"
+          >
+            {isCreating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                AI Create
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
+}
+
+// Helper functions to simulate AI generation
+function generateRoleDescription(title: string, level: string, baseDescription: string): string {
+  const levelContext = {
+    'Professional': 'individual contributor focused on executing core responsibilities',
+    'Sr Professional': 'experienced individual contributor who mentors others and handles complex work',
+    'Manager': 'people leader responsible for team performance and development',
+    'Director': 'senior leader overseeing multiple teams and driving departmental strategy',
+    'Sr Director': 'executive leader with broad organizational impact and strategic ownership',
+    'Executive Director': 'C-suite adjacent leader driving enterprise-wide initiatives',
+    'VP': 'executive responsible for entire functional areas and organizational direction',
+  }[level] || 'professional';
+
+  const baseText = baseDescription 
+    ? `${baseDescription} ` 
+    : '';
+
+  return `${baseText}As a ${level} ${title}, this role is an ${levelContext}. Key responsibilities include driving results aligned with organizational objectives, collaborating cross-functionally with stakeholders, and ensuring excellence in delivery. This position requires strong communication skills, strategic thinking, and the ability to navigate complex business challenges while maintaining focus on outcomes and continuous improvement.`;
+}
+
+function generateSkillsForRole(title: string, level: string): string[] {
+  const titleLower = title.toLowerCase();
+  
+  // Base skills by level
+  const levelSkills: Record<string, string[]> = {
+    'Professional': ['Communication', 'Problem Solving', 'Time Management'],
+    'Sr Professional': ['Mentoring', 'Technical Expertise', 'Project Management'],
+    'Manager': ['People Management', 'Performance Coaching', 'Team Building'],
+    'Director': ['Strategic Planning', 'Budget Management', 'Executive Communication'],
+    'Sr Director': ['Organizational Leadership', 'Change Management', 'Cross-functional Alignment'],
+    'Executive Director': ['Enterprise Strategy', 'Board Communication', 'Transformation Leadership'],
+    'VP': ['Vision Setting', 'Executive Presence', 'P&L Ownership'],
+  };
+
+  // Title-specific skills
+  let titleSkills: string[] = [];
+  if (titleLower.includes('product')) {
+    titleSkills = ['Product Strategy', 'Roadmap Planning', 'User Research'];
+  } else if (titleLower.includes('engineer') || titleLower.includes('developer')) {
+    titleSkills = ['Software Development', 'System Design', 'Code Review'];
+  } else if (titleLower.includes('design')) {
+    titleSkills = ['UX Design', 'Visual Design', 'Design Systems'];
+  } else if (titleLower.includes('sales')) {
+    titleSkills = ['Sales Strategy', 'Client Relations', 'Revenue Growth'];
+  } else if (titleLower.includes('marketing')) {
+    titleSkills = ['Marketing Strategy', 'Brand Management', 'Campaign Execution'];
+  } else if (titleLower.includes('finance') || titleLower.includes('financial')) {
+    titleSkills = ['Financial Analysis', 'Forecasting', 'Risk Management'];
+  } else if (titleLower.includes('hr') || titleLower.includes('people')) {
+    titleSkills = ['Talent Management', 'Employee Relations', 'HR Strategy'];
+  } else if (titleLower.includes('operations')) {
+    titleSkills = ['Process Optimization', 'Operational Excellence', 'Vendor Management'];
+  } else if (titleLower.includes('data') || titleLower.includes('analyst')) {
+    titleSkills = ['Data Analysis', 'SQL', 'Business Intelligence'];
+  } else {
+    titleSkills = ['Domain Expertise', 'Analytical Thinking', 'Stakeholder Management'];
+  }
+
+  const baseSkills = levelSkills[level] || levelSkills['Professional'];
+  return [...titleSkills.slice(0, 3), ...baseSkills.slice(0, 2)];
 }

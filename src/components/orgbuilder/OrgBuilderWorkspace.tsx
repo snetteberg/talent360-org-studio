@@ -110,8 +110,18 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
     setShowAddPosition(true);
   };
 
-  const handleAddPosition = (position: { title: string; description: string; department: string }) => {
+  const handleAddPosition = (position: { title: string; description: string; level: string; skills: string[] }) => {
     if (isBaseline) return;
+
+    const levelMap: Record<string, number> = {
+      'Professional': 1,
+      'Sr Professional': 2,
+      'Manager': 3,
+      'Director': 4,
+      'Sr Director': 5,
+      'Executive Director': 6,
+      'VP': 7,
+    };
 
     const newNodeId = `node-${Date.now()}`;
     const newNode: OrgNode = {
@@ -120,9 +130,9 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
         id: `pos-${Date.now()}`,
         title: position.title,
         description: position.description,
-        department: position.department,
-        requiredSkills: [],
-        level: 3,
+        department: 'General',
+        requiredSkills: position.skills,
+        level: levelMap[position.level] || 3,
       },
       parentId: addPositionParentId,
       children: [],
