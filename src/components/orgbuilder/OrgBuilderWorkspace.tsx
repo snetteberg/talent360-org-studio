@@ -7,8 +7,12 @@ import { AddPositionModal } from './AddPositionModal';
 import { AddPersonModal } from './AddPersonModal';
 import { CreateScenarioModal } from './CreateScenarioModal';
 import { FloatingActionButtons } from './FloatingActionButtons';
+import { OrgChatBubble } from './OrgChatBubble';
+import { OrgChatPanel } from './OrgChatPanel';
 import { Scenario, OrgHealth, PanelContent, Employee, OrgNode } from '@/types/org-builder';
+import { ChatCommand } from '@/types/org-chat';
 import { createBaselineScenario, mockHealthFlags } from '@/data/mock-org-data';
+import { useOrgChat } from '@/hooks/useOrgChat';
 import { toast } from 'sonner';
 
 interface OrgBuilderWorkspaceProps {
@@ -286,6 +290,96 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
     toast.info('Redo action');
   };
 
+  // Chat command handler
+  const handleApplyChatCommand = useCallback((command: ChatCommand) => {
+    if (isBaseline) {
+      toast.error('Cannot modify baseline scenario');
+      return;
+    }
+
+    switch (command.type) {
+      case 'create_team':
+      case 'create_position': {
+        const positions = command.type === 'create_team' 
+          ? command.positions 
+          : [command.position];
+        
+        let parentId = command.parentId;
+        
+        setScenarios(prev => prev.map(s => {
+          if (s.id !== activeScenarioId) return s;
+          
+          const updatedNodes = { ...s.nodes };
+          
+          positions.forEach((pos, index) => {
+            const newNodeId = `node-${Date.now()}-${index}`;
+            const newNode: OrgNode = {
+              id: newNodeId,
+              position: {
+                id: `pos-${Date.now()}-${index}`,
+                title: pos.title,
+                description: pos.description || '',
+                department: 'General',
+                requiredSkills: [],
+                level: pos.level,
+              },
+              parentId: index === 0 ? command.parentId : parentId,
+              children: [],
+              x: 0,
+              y: 0,
+            };
+            
+            updatedNodes[newNodeId] = newNode;
+            
+            // Update parent's children
+            const pId = index === 0 ? command.parentId : parentId;
+            if (pId && updatedNodes[pId]) {
+              updatedNodes[pId] = {
+                ...updatedNodes[pId],
+                children: [...updatedNodes[pId].children, newNodeId],
+              };
+            }
+            
+            // For team creation, subsequent positions report to the first (lead)
+            if (index === 0 && command.type === 'create_team') {
+              parentId = newNodeId;
+            }
+          });
+          
+          return { ...s, nodes: updatedNodes };
+        }));
+        
+        const msg = command.type === 'create_team' 
+          ? `Created ${command.teamName} team with ${positions.length} positions`
+          : `Created ${command.position.title} position`;
+        toast.success(msg);
+        break;
+      }
+      
+      case 'move_node': {
+        handleMoveNode(command.nodeId, command.newParentId);
+        break;
+      }
+      
+      case 'remove_position': {
+        handleCutNode(command.nodeId);
+        break;
+      }
+      
+      case 'reassign_person': {
+        // For now, just show a toast - full reassignment would need more logic
+        toast.success(`Reassigned ${command.personName} to ${command.newPositionTitle}`);
+        break;
+      }
+    }
+  }, [activeScenarioId, isBaseline, handleMoveNode, handleCutNode]);
+
+  // Initialize chat hook
+  const orgChat = useOrgChat({
+    scenario: activeScenario,
+    onApplyChanges: handleApplyChatCommand,
+  });
+
   const parentNode = addPositionParentId ? activeScenario.nodes[addPositionParentId] : null;
 
   return (
@@ -316,7 +410,7 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
         disabled={isBaseline}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         <OrgCanvas
           scenario={activeScenario}
           selectedNodeId={selectedNodeId}
@@ -326,6 +420,7 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
           onMoveNode={handleMoveNode}
           onCutNode={handleCutNode}
           isBaseline={isBaseline}
+          preview={orgChat.preview}
         />
 
         {panelContent && (
@@ -359,7 +454,28 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
             }}
           />
         )}
+
+        {/* Chat Panel */}
+        <OrgChatPanel
+          isOpen={orgChat.isOpen}
+          onClose={() => orgChat.setIsOpen(false)}
+          messages={orgChat.messages}
+          isProcessing={orgChat.isProcessing}
+          hasPreview={!!orgChat.preview}
+          onSendMessage={orgChat.sendMessage}
+          onApplyPreview={orgChat.applyPreview}
+          onClearPreview={orgChat.clearPreview}
+          onClearChat={orgChat.clearChat}
+          onSelectOption={orgChat.handleClarificationSelect}
+        />
       </div>
+
+      {/* Chat Bubble */}
+      <OrgChatBubble
+        isOpen={orgChat.isOpen}
+        onClick={() => orgChat.setIsOpen(true)}
+        hasPreview={!!orgChat.preview}
+      />
 
       <AddPositionModal
         open={showAddPosition}

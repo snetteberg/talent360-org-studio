@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { OrgNode as OrgNodeType, Scenario } from '@/types/org-builder';
+import { PreviewState } from '@/types/org-chat';
 import { OrgNode } from './OrgNode';
 import { NodePopover } from './NodePopover';
 import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
@@ -14,6 +15,7 @@ interface OrgCanvasProps {
   onMoveNode: (nodeId: string, newParentId: string) => void;
   onCutNode: (nodeId: string) => void;
   isBaseline: boolean;
+  preview?: PreviewState | null;
 }
 
 export function OrgCanvas({
@@ -25,6 +27,7 @@ export function OrgCanvas({
   onMoveNode,
   onCutNode,
   isBaseline,
+  preview,
 }: OrgCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -152,11 +155,32 @@ export function OrgCanvas({
     return () => canvas.removeEventListener('wheel', handleWheel);
   }, [handleWheel]);
 
-  // Calculate tree layout
+  // Calculate tree layout including preview nodes
   const calculateLayout = useCallback(() => {
-    const nodes = scenario.nodes;
+    // Merge scenario nodes with preview nodes
+    const allNodes: Record<string, OrgNodeType> = { ...scenario.nodes };
+    const previewNodeIds = new Set<string>();
+    
+    // Add preview nodes to the node map
+    if (preview?.pendingNodes) {
+      preview.pendingNodes.forEach(node => {
+        allNodes[node.id] = node;
+        previewNodeIds.add(node.id);
+        // Add to parent's children list for layout calculation
+        if (node.parentId && allNodes[node.parentId]) {
+          const parent = allNodes[node.parentId];
+          if (!parent.children.includes(node.id)) {
+            allNodes[node.parentId] = {
+              ...parent,
+              children: [...parent.children, node.id]
+            };
+          }
+        }
+      });
+    }
+
     const rootId = scenario.rootId;
-    if (!rootId || !nodes[rootId]) return { positions: {}, connections: [] };
+    if (!rootId || !allNodes[rootId]) return { positions: {}, connections: [], previewNodeIds, allNodes };
 
     const nodeWidth = 200;
     const nodeHeight = 80;
@@ -164,15 +188,15 @@ export function OrgCanvas({
     const verticalGap = 80;
 
     const positions: Record<string, { x: number; y: number }> = {};
-    const connections: { from: string; to: string }[] = [];
+    const connections: { from: string; to: string; isPreview?: boolean }[] = [];
 
     const calculateSubtreeWidth = (nodeId: string): number => {
-      const node = nodes[nodeId];
+      const node = allNodes[nodeId];
       if (!node || node.children.length === 0) return nodeWidth;
       
       let totalWidth = 0;
       node.children.forEach((childId, index) => {
-        if (nodes[childId]) {
+        if (allNodes[childId]) {
           totalWidth += calculateSubtreeWidth(childId);
           if (index < node.children.length - 1) {
             totalWidth += horizontalGap;
@@ -183,7 +207,7 @@ export function OrgCanvas({
     };
 
     const positionNode = (nodeId: string, x: number, y: number) => {
-      const node = nodes[nodeId];
+      const node = allNodes[nodeId];
       if (!node) return;
 
       const subtreeWidth = calculateSubtreeWidth(nodeId);
@@ -191,8 +215,9 @@ export function OrgCanvas({
 
       let childX = x;
       node.children.forEach(childId => {
-        if (nodes[childId]) {
-          connections.push({ from: nodeId, to: childId });
+        if (allNodes[childId]) {
+          const isPreviewConnection = previewNodeIds.has(childId) || previewNodeIds.has(nodeId);
+          connections.push({ from: nodeId, to: childId, isPreview: isPreviewConnection });
           const childWidth = calculateSubtreeWidth(childId);
           positionNode(childId, childX, y + nodeHeight + verticalGap);
           childX += childWidth + horizontalGap;
@@ -203,10 +228,10 @@ export function OrgCanvas({
     const totalWidth = calculateSubtreeWidth(rootId);
     positionNode(rootId, 0, 40);
 
-    return { positions, connections };
-  }, [scenario]);
+    return { positions, connections, previewNodeIds, allNodes };
+  }, [scenario, preview]);
 
-  const { positions, connections } = calculateLayout();
+  const { positions, connections, previewNodeIds, allNodes } = calculateLayout();
 
   const canvasBounds = Object.values(positions).reduce(
     (bounds, pos) => ({
@@ -282,7 +307,7 @@ export function OrgCanvas({
             width={canvasWidth}
             height={canvasHeight}
           >
-            {connections.map(({ from, to }) => {
+            {connections.map(({ from, to, isPreview: isPreviewConn }) => {
               const fromPos = positions[from];
               const toPos = positions[to];
               if (!fromPos || !toPos) return null;
@@ -295,8 +320,11 @@ export function OrgCanvas({
               return (
                 <path
                   key={`${from}-${to}`}
-                  className="org-connector"
+                  className={isPreviewConn ? "org-connector-preview" : "org-connector"}
                   d={`M ${fromX} ${fromY} C ${fromX} ${fromY + 40}, ${toX} ${toY - 40}, ${toX} ${toY}`}
+                  strokeDasharray={isPreviewConn ? "5,5" : undefined}
+                  stroke={isPreviewConn ? "hsl(var(--primary))" : undefined}
+                  strokeOpacity={isPreviewConn ? 0.6 : undefined}
                 />
               );
             })}
@@ -304,9 +332,12 @@ export function OrgCanvas({
 
           {/* Nodes */}
           {Object.entries(positions).map(([nodeId, pos]) => {
-            const node = scenario.nodes[nodeId];
+            const node = allNodes[nodeId];
             if (!node) return null;
 
+            const isPreviewNode = previewNodeIds?.has(nodeId) || false;
+            const isPendingRemoval = preview?.pendingRemovals?.includes(nodeId) || false;
+            const isPendingMove = preview?.pendingMoves?.some(m => m.nodeId === nodeId) || false;
             const isDragging = draggingNodeId === nodeId && hasDragStarted;
             const isDropTarget = dropTargetId === nodeId && draggingNodeId && draggingNodeId !== nodeId && !isDescendant(draggingNodeId, nodeId);
 
@@ -321,12 +352,15 @@ export function OrgCanvas({
                   isSelected={selectedNodeId === nodeId}
                   isDragging={isDragging}
                   isDropTarget={isDropTarget}
+                  isPreview={isPreviewNode}
+                  isPendingRemoval={isPendingRemoval}
+                  isPendingMove={isPendingMove}
                   onClick={() => {
-                    if (!hasDragStarted) {
+                    if (!hasDragStarted && !isPreviewNode) {
                       onSelectNode(nodeId);
                     }
                   }}
-                  onDragStart={(e) => handleNodeDragStart(nodeId, e)}
+                  onDragStart={(e) => !isPreviewNode && handleNodeDragStart(nodeId, e)}
                   onDragEnd={handleNodeDragEnd}
                   onDrop={() => {
                     if (draggingNodeId && draggingNodeId !== nodeId) {
@@ -344,7 +378,7 @@ export function OrgCanvas({
                     }
                   }}
                 />
-                {selectedNodeId === nodeId && !isDragging && (
+                {selectedNodeId === nodeId && !isDragging && !isPreviewNode && (
                   <div className="absolute left-full top-0 ml-2 z-20">
                     <NodePopover
                       onAddSubPosition={() => onAddSubPosition(nodeId)}
