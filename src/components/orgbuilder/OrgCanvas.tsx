@@ -182,10 +182,10 @@ export function OrgCanvas({
     const rootId = scenario.rootId;
     if (!rootId || !allNodes[rootId]) return { positions: {}, connections: [], previewNodeIds, allNodes };
 
-    const nodeWidth = 200;
-    const nodeHeight = 80;
-    const horizontalGap = 40;
-    const verticalGap = 80;
+    const nodeWidth = 160;
+    const nodeHeight = 56;
+    const horizontalGap = 16;
+    const verticalGap = 40;
 
     const positions: Record<string, { x: number; y: number }> = {};
     const connections: { from: string; to: string; isPreview?: boolean }[] = [];
@@ -236,9 +236,9 @@ export function OrgCanvas({
   const canvasBounds = Object.values(positions).reduce(
     (bounds, pos) => ({
       minX: Math.min(bounds.minX, pos.x),
-      maxX: Math.max(bounds.maxX, pos.x + 180),
+      maxX: Math.max(bounds.maxX, pos.x + 160),
       minY: Math.min(bounds.minY, pos.y),
-      maxY: Math.max(bounds.maxY, pos.y + 80),
+      maxY: Math.max(bounds.maxY, pos.y + 56),
     }),
     { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
   );
@@ -307,27 +307,93 @@ export function OrgCanvas({
             width={canvasWidth}
             height={canvasHeight}
           >
-            {connections.map(({ from, to, isPreview: isPreviewConn }) => {
-              const fromPos = positions[from];
-              const toPos = positions[to];
-              if (!fromPos || !toPos) return null;
+          {/* Draw elbow connectors: horizontal bar + vertical drops */}
+            {(() => {
+              // Group connections by parent
+              const parentGroups: Record<string, string[]> = {};
+              connections.forEach(({ from, to }) => {
+                if (!parentGroups[from]) parentGroups[from] = [];
+                parentGroups[from].push(to);
+              });
 
-              const fromX = fromPos.x + 90;
-              const fromY = fromPos.y + 72;
-              const toX = toPos.x + 90;
-              const toY = toPos.y;
+              return Object.entries(parentGroups).map(([parentId, children]) => {
+                const parentPos = positions[parentId];
+                if (!parentPos) return null;
 
-              return (
-                <path
-                  key={`${from}-${to}`}
-                  className={isPreviewConn ? "org-connector-preview" : "org-connector"}
-                  d={`M ${fromX} ${fromY} C ${fromX} ${fromY + 40}, ${toX} ${toY - 40}, ${toX} ${toY}`}
-                  strokeDasharray={isPreviewConn ? "5,5" : undefined}
-                  stroke={isPreviewConn ? "hsl(var(--primary))" : undefined}
-                  strokeOpacity={isPreviewConn ? 0.6 : undefined}
-                />
-              );
-            })}
+                const parentCenterX = parentPos.x + 80;
+                const parentBottomY = parentPos.y + 56;
+                const midY = parentBottomY + 20;
+
+                // Get child positions
+                const childPositions = children
+                  .map(childId => ({ id: childId, pos: positions[childId] }))
+                  .filter(c => c.pos);
+
+                if (childPositions.length === 0) return null;
+
+                const isPreviewConn = previewNodeIds?.has(parentId) || children.some(c => previewNodeIds?.has(c));
+                const strokeColor = isPreviewConn ? "hsl(var(--primary))" : "hsl(var(--border))";
+                const strokeOpacity = isPreviewConn ? 0.6 : 1;
+
+                // Single child: straight vertical line
+                if (childPositions.length === 1) {
+                  const childCenterX = childPositions[0].pos!.x + 80;
+                  const childTopY = childPositions[0].pos!.y;
+                  return (
+                    <g key={`connector-${parentId}`}>
+                      <path
+                        d={`M ${parentCenterX} ${parentBottomY} L ${parentCenterX} ${midY} L ${childCenterX} ${midY} L ${childCenterX} ${childTopY}`}
+                        fill="none"
+                        stroke={strokeColor}
+                        strokeWidth={1}
+                        strokeOpacity={strokeOpacity}
+                        strokeDasharray={isPreviewConn ? "5,5" : undefined}
+                      />
+                    </g>
+                  );
+                }
+
+                // Multiple children: horizontal bar + vertical drops
+                const childXs = childPositions.map(c => c.pos!.x + 80);
+                const minX = Math.min(...childXs);
+                const maxX = Math.max(...childXs);
+
+                return (
+                  <g key={`connector-${parentId}`}>
+                    {/* Vertical from parent to midline */}
+                    <line
+                      x1={parentCenterX} y1={parentBottomY}
+                      x2={parentCenterX} y2={midY}
+                      stroke={strokeColor}
+                      strokeWidth={1}
+                      strokeOpacity={strokeOpacity}
+                      strokeDasharray={isPreviewConn ? "5,5" : undefined}
+                    />
+                    {/* Horizontal bar across children */}
+                    <line
+                      x1={minX} y1={midY}
+                      x2={maxX} y2={midY}
+                      stroke={strokeColor}
+                      strokeWidth={1}
+                      strokeOpacity={strokeOpacity}
+                      strokeDasharray={isPreviewConn ? "5,5" : undefined}
+                    />
+                    {/* Vertical drops to each child */}
+                    {childPositions.map(({ id, pos }) => (
+                      <line
+                        key={`drop-${id}`}
+                        x1={pos!.x + 80} y1={midY}
+                        x2={pos!.x + 80} y2={pos!.y}
+                        stroke={strokeColor}
+                        strokeWidth={1}
+                        strokeOpacity={strokeOpacity}
+                        strokeDasharray={isPreviewConn ? "5,5" : undefined}
+                      />
+                    ))}
+                  </g>
+                );
+              });
+            })()}
           </svg>
 
           {/* Nodes */}
