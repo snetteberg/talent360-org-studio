@@ -1,4 +1,4 @@
-import { User, Briefcase } from 'lucide-react';
+import { Briefcase, Plus } from 'lucide-react';
 import { OrgNode as OrgNodeType } from '@/types/org-builder';
 import { cn } from '@/lib/utils';
 
@@ -10,12 +10,14 @@ interface OrgNodeProps {
   isPreview?: boolean;
   isPendingRemoval?: boolean;
   isPendingMove?: boolean;
+  isBaseline?: boolean;
   onClick: () => void;
   onDragStart: (e: React.MouseEvent) => void;
   onDragEnd: () => void;
   onDrop: () => void;
   onDragOver: () => void;
   onDragLeave: () => void;
+  onAddSubPosition?: () => void;
 }
 
 export function OrgNode({ 
@@ -26,12 +28,14 @@ export function OrgNode({
   isPreview,
   isPendingRemoval,
   isPendingMove,
+  isBaseline,
   onClick, 
   onDragStart,
   onDragEnd,
   onDrop,
   onDragOver,
   onDragLeave,
+  onAddSubPosition,
 }: OrgNodeProps) {
   const isFilled = !!node.employee;
   const initials = node.employee?.name
@@ -54,7 +58,7 @@ export function OrgNode({
   return (
     <div
       className={cn(
-        'org-node w-[180px] p-3 select-none transition-all',
+        'org-node w-[180px] p-3 select-none transition-all relative group',
         isFilled ? 'org-node-filled' : 'org-node-open',
         isSelected && 'ring-2 ring-primary shadow-medium',
         isDragging && 'opacity-50 scale-95 cursor-grabbing',
@@ -114,6 +118,26 @@ export function OrgNode({
           )}
         </div>
       </div>
+
+      {/* Add sub-position button */}
+      {!isBaseline && !isPreview && !isDragging && onAddSubPosition && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddSubPosition();
+          }}
+          className={cn(
+            'absolute left-1/2 -translate-x-1/2 -bottom-3 w-6 h-6 rounded-full',
+            'bg-primary text-primary-foreground shadow-md',
+            'flex items-center justify-center',
+            'opacity-0 group-hover:opacity-100 hover:opacity-100 hover:scale-110',
+            'transition-all duration-200',
+            isSelected && 'opacity-100'
+          )}
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 }

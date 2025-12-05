@@ -6,7 +6,6 @@ import { FreeAgentsDrawer } from './FreeAgentsDrawer';
 import { AddPositionModal } from './AddPositionModal';
 import { AddPersonModal } from './AddPersonModal';
 import { CreateScenarioModal } from './CreateScenarioModal';
-import { FloatingActionButtons } from './FloatingActionButtons';
 import { OrgChatBubble } from './OrgChatBubble';
 import { OrgChatPanel } from './OrgChatPanel';
 import { Scenario, OrgHealth, PanelContent, Employee, OrgNode } from '@/types/org-builder';
@@ -504,15 +503,6 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
         isBaseline={isBaseline}
         health={health}
         onHealthClick={() => setPanelContent({ type: 'health' })}
-      />
-
-      <FloatingActionButtons
-        onAddPosition={() => {
-          setAddPositionParentId(activeScenario.rootId);
-          setShowAddPosition(true);
-        }}
-        onAddPerson={() => setShowAddPerson(true)}
-        disabled={isBaseline}
       />
 
       <div className="flex flex-1 overflow-hidden relative">
