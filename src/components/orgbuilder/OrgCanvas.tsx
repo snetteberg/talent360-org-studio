@@ -14,6 +14,7 @@ interface OrgCanvasProps {
   onAddSubPosition: (parentId: string) => void;
   onMoveNode: (nodeId: string, newParentId: string) => void;
   onCutNode: (nodeId: string) => void;
+  onModifyNewScenario?: (nodeId: string) => void;
   isBaseline: boolean;
   preview?: PreviewState | null;
 }
@@ -26,6 +27,7 @@ export function OrgCanvas({
   onAddSubPosition,
   onMoveNode,
   onCutNode,
+  onModifyNewScenario,
   isBaseline,
   preview,
 }: OrgCanvasProps) {
@@ -452,6 +454,7 @@ export function OrgCanvas({
                       onAddSubPosition={() => onAddSubPosition(nodeId)}
                       onCut={() => onCutNode(nodeId)}
                       onViewDetails={() => onViewDetails(nodeId)}
+                      onModifyNewScenario={isBaseline && onModifyNewScenario ? () => onModifyNewScenario(nodeId) : undefined}
                       isBaseline={isBaseline}
                     />
                   </div>
