@@ -355,6 +355,7 @@ export function OrgCanvas({
                   isPreview={isPreviewNode}
                   isPendingRemoval={isPendingRemoval}
                   isPendingMove={isPendingMove}
+                  isBaseline={isBaseline}
                   onClick={() => {
                     if (!hasDragStarted && !isPreviewNode) {
                       onSelectNode(nodeId);
@@ -377,6 +378,7 @@ export function OrgCanvas({
                       setDropTargetId(null);
                     }
                   }}
+                  onAddSubPosition={() => onAddSubPosition(nodeId)}
                 />
                 {selectedNodeId === nodeId && !isDragging && !isPreviewNode && (
                   <div className="absolute left-full top-0 ml-2 z-20">
