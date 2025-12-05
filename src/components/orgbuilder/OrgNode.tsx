@@ -11,12 +11,16 @@ interface OrgNodeProps {
   isPendingRemoval?: boolean;
   isPendingMove?: boolean;
   isBaseline?: boolean;
+  isDragActive?: boolean;
+  isValidDropTarget?: boolean;
   onClick: () => void;
   onDragStart: (e: React.MouseEvent) => void;
   onDragEnd: () => void;
   onDrop: () => void;
   onDragOver: () => void;
   onDragLeave: () => void;
+  onDropZoneEnter?: () => void;
+  onDropZoneLeave?: () => void;
   onAddSubPosition?: () => void;
 }
 
@@ -29,12 +33,16 @@ export function OrgNode({
   isPendingRemoval,
   isPendingMove,
   isBaseline,
+  isDragActive,
+  isValidDropTarget,
   onClick, 
   onDragStart,
   onDragEnd,
   onDrop,
   onDragOver,
   onDragLeave,
+  onDropZoneEnter,
+  onDropZoneLeave,
   onAddSubPosition,
 }: OrgNodeProps) {
   const isFilled = !!node.employee;
@@ -120,7 +128,7 @@ export function OrgNode({
       </div>
 
       {/* Add sub-position button */}
-      {!isBaseline && !isPreview && !isDragging && onAddSubPosition && (
+      {!isBaseline && !isPreview && !isDragging && !isDragActive && onAddSubPosition && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -137,6 +145,38 @@ export function OrgNode({
         >
           <Plus className="w-3 h-3" />
         </button>
+      )}
+
+      {/* Drop zone indicator - appears below node when dragging */}
+      {isDragActive && !isDragging && (
+        <div
+          className={cn(
+            'absolute left-1/2 -translate-x-1/2 top-full mt-2',
+            'w-[180px] py-2 px-3 rounded-md',
+            'border-2 border-dashed transition-all duration-200',
+            'flex items-center justify-center gap-2',
+            'text-xs font-medium',
+            isValidDropTarget
+              ? 'border-success bg-success/20 text-success-foreground scale-105'
+              : 'border-muted-foreground/30 bg-muted/50 text-muted-foreground'
+          )}
+          onMouseEnter={(e) => {
+            e.stopPropagation();
+            onDropZoneEnter?.();
+          }}
+          onMouseLeave={(e) => {
+            e.stopPropagation();
+            onDropZoneLeave?.();
+          }}
+        >
+          <span className="text-lg">↓</span>
+          <span>
+            {isValidDropTarget 
+              ? `Drop under ${node.employee?.name || node.position.title}`
+              : `Move under ${node.employee?.name || node.position.title}`
+            }
+          </span>
+        </div>
       )}
     </div>
   );

@@ -412,6 +412,12 @@ export function OrgCanvas({
             const isDragging = draggingNodeId === nodeId && hasDragStarted;
             const isDropTarget = dropTargetId === nodeId && draggingNodeId && draggingNodeId !== nodeId && !isDescendant(draggingNodeId, nodeId);
 
+            // Check if this is a valid drop target (not self, not descendant of dragging node)
+            const canBeDropTarget = draggingNodeId && 
+              draggingNodeId !== nodeId && 
+              !isDescendant(draggingNodeId, nodeId) &&
+              !isPreviewNode;
+
             return (
               <div
                 key={nodeId}
@@ -427,6 +433,8 @@ export function OrgCanvas({
                   isPendingRemoval={isPendingRemoval}
                   isPendingMove={isPendingMove}
                   isBaseline={isBaseline}
+                  isDragActive={hasDragStarted && !!draggingNodeId}
+                  isValidDropTarget={dropTargetId === nodeId && canBeDropTarget}
                   onClick={() => {
                     if (!hasDragStarted && !isPreviewNode) {
                       onSelectNode(nodeId);
@@ -449,9 +457,19 @@ export function OrgCanvas({
                       setDropTargetId(null);
                     }
                   }}
+                  onDropZoneEnter={() => {
+                    if (canBeDropTarget && hasDragStarted) {
+                      setDropTargetId(nodeId);
+                    }
+                  }}
+                  onDropZoneLeave={() => {
+                    if (dropTargetId === nodeId) {
+                      setDropTargetId(null);
+                    }
+                  }}
                   onAddSubPosition={() => onAddSubPosition(nodeId)}
                 />
-                {selectedNodeId === nodeId && !isDragging && !isPreviewNode && (
+                {selectedNodeId === nodeId && !isDragging && !isPreviewNode && !hasDragStarted && (
                   <div className="absolute left-full top-0 ml-2 z-20">
                     <NodePopover
                       onAddSubPosition={() => onAddSubPosition(nodeId)}
