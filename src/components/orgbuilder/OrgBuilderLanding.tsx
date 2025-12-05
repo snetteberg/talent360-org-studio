@@ -64,20 +64,6 @@ export function OrgBuilderLanding({ onStartFromBaseline, onStartFromBlank }: Org
         </button>
       </div>
 
-      <div className="mt-12 flex items-center gap-6 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-success" />
-          <span>Real-time insights</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-primary" />
-          <span>Talent matching</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-accent" />
-          <span>Scenario comparison</span>
-        </div>
-      </div>
     </div>
   );
 }
