@@ -71,11 +71,11 @@ export function OrgCanvas({
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    // Check if we should start node dragging (after threshold)
+  // Check if we should start node dragging (after threshold)
     if (dragStartPos && draggingNodeId && !hasDragStarted) {
       const dx = Math.abs(e.clientX - dragStartPos.x);
       const dy = Math.abs(e.clientY - dragStartPos.y);
-      if (dx > 5 || dy > 5) {
+      if (dx > 10 || dy > 10) {
         setHasDragStarted(true);
       }
     }
@@ -119,11 +119,14 @@ export function OrgCanvas({
     return node.children.some(childId => isDescendant(childId, targetId));
   };
 
-  // Handle node drag start
+  // Handle node drag start - only allow drag if node is already selected
   const handleNodeDragStart = (nodeId: string, e: React.MouseEvent) => {
     if (isBaseline) return;
-    setDraggingNodeId(nodeId);
-    setDragStartPos({ x: e.clientX, y: e.clientY });
+    // Only initiate drag if this node is already selected (prevents accidental drags on first click)
+    if (selectedNodeId === nodeId) {
+      setDraggingNodeId(nodeId);
+      setDragStartPos({ x: e.clientX, y: e.clientY });
+    }
   };
 
   // Handle node drag end

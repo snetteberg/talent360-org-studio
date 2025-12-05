@@ -52,6 +52,7 @@ export function OrgNode({
 
   const handleMouseUp = (e: React.MouseEvent) => {
     e.stopPropagation();
+    onDragEnd();
     onDrop();
   };
 
