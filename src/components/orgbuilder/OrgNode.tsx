@@ -21,6 +21,7 @@ interface OrgNodeProps {
   onDragLeave: () => void;
   onDropZoneEnter?: () => void;
   onDropZoneLeave?: () => void;
+  onDropZoneMouseUp?: () => void;
   onAddSubPosition?: () => void;
 }
 
@@ -43,6 +44,7 @@ export function OrgNode({
   onDragLeave,
   onDropZoneEnter,
   onDropZoneLeave,
+  onDropZoneMouseUp,
   onAddSubPosition,
 }: OrgNodeProps) {
   const isFilled = !!node.employee;
@@ -167,6 +169,10 @@ export function OrgNode({
           onMouseLeave={(e) => {
             e.stopPropagation();
             onDropZoneLeave?.();
+          }}
+          onMouseUp={(e) => {
+            e.stopPropagation();
+            onDropZoneMouseUp?.();
           }}
         >
           <span className="text-lg">↓</span>

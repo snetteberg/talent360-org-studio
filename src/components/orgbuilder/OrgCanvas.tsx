@@ -443,8 +443,12 @@ export function OrgCanvas({
                   onDragStart={(e) => !isPreviewNode && handleNodeDragStart(nodeId, e)}
                   onDragEnd={handleNodeDragEnd}
                   onDrop={() => {
-                    if (draggingNodeId && draggingNodeId !== nodeId) {
-                      // Drop handled in handleMouseUp
+                    if (draggingNodeId && draggingNodeId !== nodeId && hasDragStarted && canBeDropTarget) {
+                      onMoveNode(draggingNodeId, nodeId);
+                      setDraggingNodeId(null);
+                      setDropTargetId(null);
+                      setDragStartPos(null);
+                      setHasDragStarted(false);
                     }
                   }}
                   onDragOver={() => {
@@ -465,6 +469,15 @@ export function OrgCanvas({
                   onDropZoneLeave={() => {
                     if (dropTargetId === nodeId) {
                       setDropTargetId(null);
+                    }
+                  }}
+                  onDropZoneMouseUp={() => {
+                    if (draggingNodeId && canBeDropTarget && hasDragStarted) {
+                      onMoveNode(draggingNodeId, nodeId);
+                      setDraggingNodeId(null);
+                      setDropTargetId(null);
+                      setDragStartPos(null);
+                      setHasDragStarted(false);
                     }
                   }}
                   onAddSubPosition={() => onAddSubPosition(nodeId)}
