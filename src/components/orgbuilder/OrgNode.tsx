@@ -7,6 +7,9 @@ interface OrgNodeProps {
   isSelected: boolean;
   isDragging?: boolean;
   isDropTarget?: boolean;
+  isPreview?: boolean;
+  isPendingRemoval?: boolean;
+  isPendingMove?: boolean;
   onClick: () => void;
   onDragStart: (e: React.MouseEvent) => void;
   onDragEnd: () => void;
@@ -20,6 +23,9 @@ export function OrgNode({
   isSelected, 
   isDragging,
   isDropTarget,
+  isPreview,
+  isPendingRemoval,
+  isPendingMove,
   onClick, 
   onDragStart,
   onDragEnd,
@@ -53,7 +59,11 @@ export function OrgNode({
         isSelected && 'ring-2 ring-primary shadow-medium',
         isDragging && 'opacity-50 scale-95 cursor-grabbing',
         isDropTarget && 'ring-2 ring-success bg-success/10 scale-105',
-        !isDragging && 'cursor-grab'
+        !isDragging && !isPreview && 'cursor-grab',
+        // Preview styles
+        isPreview && 'border-2 border-dashed border-primary/60 bg-primary/5 opacity-80 animate-pulse',
+        isPendingRemoval && 'opacity-40 bg-destructive/10 border-destructive line-through',
+        isPendingMove && 'ring-2 ring-warning/60 bg-warning/5'
       )}
       onClick={(e) => {
         e.stopPropagation();
