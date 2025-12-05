@@ -56,6 +56,7 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
   const [showAddPerson, setShowAddPerson] = useState(false);
   const [showCreateScenario, setShowCreateScenario] = useState(false);
   const [addPositionParentId, setAddPositionParentId] = useState<string | null>(null);
+  const [pendingModifyNodeId, setPendingModifyNodeId] = useState<string | null>(null);
 
   // History for undo/redo
   const [history, setHistory] = useState<Scenario[]>([]);
@@ -89,7 +90,19 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
     };
     setScenarios([...scenarios, newScenario]);
     setActiveScenarioId(newScenario.id);
+    
+    // If triggered from "Modify (New Scenario)", preserve node selection
+    if (pendingModifyNodeId) {
+      setSelectedNodeId(pendingModifyNodeId);
+      setPendingModifyNodeId(null);
+    }
+    
     toast.success(`Created scenario: ${name}`);
+  };
+
+  const handleModifyNewScenario = (nodeId: string) => {
+    setPendingModifyNodeId(nodeId);
+    setShowCreateScenario(true);
   };
 
   const handleSelectNode = (nodeId: string | null) => {
@@ -514,6 +527,7 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
           onAddSubPosition={handleAddSubPosition}
           onMoveNode={handleMoveNode}
           onCutNode={handleCutNode}
+          onModifyNewScenario={handleModifyNewScenario}
           isBaseline={isBaseline}
           preview={orgChat.preview}
         />
