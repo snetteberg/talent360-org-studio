@@ -5,10 +5,11 @@ import { findBestMatch, fuzzySearch } from '@/utils/fuzzyMatch';
 
 interface UseOrgChatOptions {
   scenario: Scenario;
+  isBaseline: boolean;
   onApplyChanges: (command: ChatCommand) => void;
 }
 
-export function useOrgChat({ scenario, onApplyChanges }: UseOrgChatOptions) {
+export function useOrgChat({ scenario, isBaseline, onApplyChanges }: UseOrgChatOptions) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [preview, setPreview] = useState<PreviewState | null>(null);
@@ -446,7 +447,10 @@ export function useOrgChat({ scenario, onApplyChanges }: UseOrgChatOptions) {
         if (result.command) {
           const previewState = generatePreview(result.command);
           setPreview(previewState);
-          addMessage('assistant', getCommandDescription(result.command) + '\n\nPreview shown on canvas. Click "Apply" to confirm or type to refine.', {
+          const baselineNote = isBaseline 
+            ? '\n\n⚠️ You are in the Baseline scenario. Applying this change will create a new scenario.'
+            : '';
+          addMessage('assistant', getCommandDescription(result.command) + '\n\nPreview shown on canvas. Click "Apply" to confirm or type to refine.' + baselineNote, {
             type: 'preview',
             command: result.command
           });
@@ -477,7 +481,10 @@ export function useOrgChat({ scenario, onApplyChanges }: UseOrgChatOptions) {
       } else if (result.command) {
         const previewState = generatePreview(result.command);
         setPreview(previewState);
-        addMessage('assistant', getCommandDescription(result.command) + '\n\nPreview shown on canvas. Click "Apply" to confirm or type to refine.', {
+        const baselineNote = isBaseline 
+          ? '\n\n⚠️ You are in the Baseline scenario. Applying this change will create a new scenario.'
+          : '';
+        addMessage('assistant', getCommandDescription(result.command) + '\n\nPreview shown on canvas. Click "Apply" to confirm or type to refine.' + baselineNote, {
           type: 'preview',
           command: result.command
         });
@@ -485,7 +492,7 @@ export function useOrgChat({ scenario, onApplyChanges }: UseOrgChatOptions) {
 
       setIsProcessing(false);
     }, 300);
-  }, [addMessage, parseCommand, generatePreview, pendingClarification]);
+  }, [addMessage, parseCommand, generatePreview, pendingClarification, isBaseline]);
 
   const handleClarificationSelect = useCallback((option: string) => {
     sendMessage(option);

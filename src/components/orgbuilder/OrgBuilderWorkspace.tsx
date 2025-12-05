@@ -292,11 +292,35 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
 
   // Chat command handler
   const handleApplyChatCommand = useCallback((command: ChatCommand) => {
+    // If in baseline, create a new scenario first
     if (isBaseline) {
-      toast.error('Cannot modify baseline scenario');
+      const baseline = scenarios.find(s => s.isBaseline)!;
+      const newScenarioName = `Scenario ${scenarios.length}`;
+      const newScenario: Scenario = {
+        id: `scenario-${Date.now()}`,
+        name: newScenarioName,
+        isBaseline: false,
+        createdAt: new Date(),
+        nodes: JSON.parse(JSON.stringify(baseline.nodes)),
+        rootId: baseline.rootId,
+        freeAgents: [...baseline.freeAgents],
+      };
+      setScenarios(prev => [...prev, newScenario]);
+      setActiveScenarioId(newScenario.id);
+      toast.info(`Created new scenario: ${newScenarioName}`);
+      
+      // Apply the command to the new scenario after state update
+      setTimeout(() => {
+        applyCommandToScenario(command, newScenario.id);
+      }, 0);
       return;
     }
 
+    applyCommandToScenario(command, activeScenarioId);
+  }, [isBaseline, scenarios, activeScenarioId]);
+
+  // Helper to apply command to a specific scenario
+  const applyCommandToScenario = useCallback((command: ChatCommand, scenarioId: string) => {
     switch (command.type) {
       case 'create_team':
       case 'create_position': {
@@ -307,7 +331,7 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
         let parentId = command.parentId;
         
         setScenarios(prev => prev.map(s => {
-          if (s.id !== activeScenarioId) return s;
+          if (s.id !== scenarioId) return s;
           
           const updatedNodes = { ...s.nodes };
           
@@ -357,26 +381,107 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
       }
       
       case 'move_node': {
-        handleMoveNode(command.nodeId, command.newParentId);
+        // For move and cut, we need to handle them inline since they depend on current scenario state
+        setScenarios(prev => prev.map(s => {
+          if (s.id !== scenarioId) return s;
+          
+          const node = s.nodes[command.nodeId];
+          if (!node) return s;
+          
+          const updatedNodes = { ...s.nodes };
+          
+          // Remove from old parent's children
+          if (node.parentId && updatedNodes[node.parentId]) {
+            updatedNodes[node.parentId] = {
+              ...updatedNodes[node.parentId],
+              children: updatedNodes[node.parentId].children.filter(id => id !== command.nodeId),
+            };
+          }
+          
+          // Add to new parent's children
+          if (updatedNodes[command.newParentId]) {
+            updatedNodes[command.newParentId] = {
+              ...updatedNodes[command.newParentId],
+              children: [...updatedNodes[command.newParentId].children, command.nodeId],
+            };
+          }
+          
+          // Update node's parent
+          updatedNodes[command.nodeId] = {
+            ...updatedNodes[command.nodeId],
+            parentId: command.newParentId,
+          };
+
+          return { ...s, nodes: updatedNodes };
+        }));
+        toast.success(`Moved ${command.nodeTitle} under ${command.newParentTitle}`);
         break;
       }
       
       case 'remove_position': {
-        handleCutNode(command.nodeId);
+        setScenarios(prev => prev.map(s => {
+          if (s.id !== scenarioId) return s;
+          
+          const node = s.nodes[command.nodeId];
+          if (!node) return s;
+          
+          // Collect employees in subtree
+          const collectEmployees = (nId: string): Employee[] => {
+            const n = s.nodes[nId];
+            if (!n) return [];
+            const employees: Employee[] = n.employee ? [n.employee] : [];
+            n.children.forEach(childId => {
+              employees.push(...collectEmployees(childId));
+            });
+            return employees;
+          };
+          
+          const displacedEmployees = collectEmployees(command.nodeId);
+          
+          // Remove node and all children
+          const removeNode = (nId: string, nodes: Record<string, OrgNode>): Record<string, OrgNode> => {
+            const n = nodes[nId];
+            if (!n) return nodes;
+            let updated = { ...nodes };
+            n.children.forEach(childId => {
+              updated = removeNode(childId, updated);
+            });
+            delete updated[nId];
+            return updated;
+          };
+          
+          let updatedNodes = removeNode(command.nodeId, s.nodes);
+          
+          // Update parent's children
+          if (node.parentId && updatedNodes[node.parentId]) {
+            updatedNodes[node.parentId] = {
+              ...updatedNodes[node.parentId],
+              children: updatedNodes[node.parentId].children.filter(id => id !== command.nodeId),
+            };
+          }
+
+          return {
+            ...s,
+            nodes: updatedNodes,
+            freeAgents: [...s.freeAgents, ...displacedEmployees],
+            rootId: s.rootId === command.nodeId ? null : s.rootId,
+          };
+        }));
+        toast.success(`Removed ${command.nodeTitle}`);
         break;
       }
       
       case 'reassign_person': {
-        // For now, just show a toast - full reassignment would need more logic
         toast.success(`Reassigned ${command.personName} to ${command.newPositionTitle}`);
         break;
       }
     }
-  }, [activeScenarioId, isBaseline, handleMoveNode, handleCutNode]);
+  }, []);
 
   // Initialize chat hook
   const orgChat = useOrgChat({
     scenario: activeScenario,
+    isBaseline,
     onApplyChanges: handleApplyChatCommand,
   });
 
