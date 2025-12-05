@@ -6,7 +6,6 @@ import { FreeAgentsDrawer } from './FreeAgentsDrawer';
 import { AddPositionModal } from './AddPositionModal';
 import { AddPersonModal } from './AddPersonModal';
 import { CreateScenarioModal } from './CreateScenarioModal';
-import { FloatingHealthPill } from './FloatingHealthPill';
 import { FloatingActionButtons } from './FloatingActionButtons';
 import { Scenario, OrgHealth, PanelContent, Employee, OrgNode } from '@/types/org-builder';
 import { createBaselineScenario, mockHealthFlags } from '@/data/mock-org-data';
@@ -304,11 +303,8 @@ export function OrgBuilderWorkspace({ initialFromBaseline }: OrgBuilderWorkspace
         canUndo={historyIndex > 0}
         canRedo={historyIndex < history.length - 1}
         isBaseline={isBaseline}
-      />
-
-      <FloatingHealthPill
         health={health}
-        onClick={() => setPanelContent({ type: 'health' })}
+        onHealthClick={() => setPanelContent({ type: 'health' })}
       />
 
       <FloatingActionButtons
