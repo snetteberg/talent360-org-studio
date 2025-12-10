@@ -30,28 +30,16 @@ const getSkillProficiency = (employeeId: string, skill: string): number => {
   return Math.abs(hash % 71) + 30;
 };
 
-const getProficiencyColor = (proficiency: number | undefined, hasSkill: boolean, isVacant: boolean): string => {
+const getProficiencyColor = (proficiency: number | undefined, hasSkill: boolean, isVacant: boolean, skillSelected: boolean): string => {
   if (isVacant) return 'hsl(var(--muted))';
+  if (!skillSelected) return 'hsl(var(--muted))';
   if (!hasSkill) return 'hsl(var(--muted))';
   if (!proficiency) return 'hsl(var(--muted))';
   
-  if (proficiency >= 90) return '#10b981';
-  if (proficiency >= 70) return '#3b82f6';
-  if (proficiency >= 50) return '#f59e0b';
-  return '#f97316';
-};
-
-const getDepartmentColor = (department: string): string => {
-  const colors: Record<string, string> = {
-    'Executive': '#8b5cf6',
-    'Technology': '#3b82f6',
-    'Operations': '#10b981',
-    'Finance': '#f59e0b',
-    'HR': '#ec4899',
-    'Sales': '#f97316',
-    'Marketing': '#06b6d4',
-  };
-  return colors[department] || '#6b7280';
+  if (proficiency >= 90) return '#10b981'; // Expert - green
+  if (proficiency >= 70) return '#3b82f6'; // Advanced - blue
+  if (proficiency >= 50) return '#f59e0b'; // Intermediate - amber
+  return '#f97316'; // Beginner - orange
 };
 
 export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps) {
@@ -90,9 +78,7 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
         ? getSkillProficiency(employee.id, selectedSkill)
         : undefined;
 
-      const fill = selectedSkill
-        ? getProficiencyColor(proficiency, hasSkill, isVacant)
-        : getDepartmentColor(node.position.department);
+      const fill = getProficiencyColor(proficiency, hasSkill, isVacant, !!selectedSkill);
 
       const children: SunburstSegment[] = [];
       
@@ -183,7 +169,8 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
     const labelX = centerX + labelRadius * Math.cos(midAngle);
     const labelY = centerY + labelRadius * Math.sin(midAngle);
     
-    const showLabel = angleSpan > 15 && ringWidth > 30;
+    // Only show labels for depth 1 (direct reports to CEO)
+    const showLabel = segment.depth === 1 && angleSpan > 15 && ringWidth > 30;
     
     elements.push(
       <TooltipProvider key={segment.id}>
@@ -299,24 +286,28 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
         </text>
       </svg>
       
-      {!selectedSkill && (
-        <div className="mt-4 flex flex-wrap gap-3 justify-center">
-          {Object.entries({
-            'Executive': '#8b5cf6',
-            'Technology': '#3b82f6',
-            'Operations': '#10b981',
-            'Finance': '#f59e0b',
-            'HR': '#ec4899',
-            'Sales': '#f97316',
-            'Marketing': '#06b6d4',
-          }).map(([dept, color]) => (
-            <div key={dept} className="flex items-center gap-1.5 text-xs">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: color }} />
-              <span className="text-muted-foreground">{dept}</span>
-            </div>
-          ))}
+      <div className="mt-4 flex flex-wrap gap-3 justify-center">
+        <div className="flex items-center gap-1.5 text-xs">
+          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }} />
+          <span className="text-muted-foreground">Expert (90%+)</span>
         </div>
-      )}
+        <div className="flex items-center gap-1.5 text-xs">
+          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }} />
+          <span className="text-muted-foreground">Advanced (70-89%)</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs">
+          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f59e0b' }} />
+          <span className="text-muted-foreground">Intermediate (50-69%)</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs">
+          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f97316' }} />
+          <span className="text-muted-foreground">Beginner (&lt;50%)</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs">
+          <div className="w-3 h-3 rounded bg-muted" />
+          <span className="text-muted-foreground">{selectedSkill ? 'No Skill / Vacant' : 'Select a skill'}</span>
+        </div>
+      </div>
     </div>
   );
 }

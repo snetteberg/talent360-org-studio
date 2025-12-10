@@ -1,87 +1,30 @@
 import { Employee, OrgNode, Position, Scenario, HealthFlag } from '@/types/org-builder';
 
-export const mockEmployees: Employee[] = [
-  {
-    id: 'emp-1',
-    name: 'Sarah Chen',
-    email: 'sarah.chen@company.com',
-    department: 'Executive',
-    skills: ['Leadership', 'Strategy', 'Operations', 'Finance'],
-    matchScore: 95,
-  },
-  {
-    id: 'emp-2',
-    name: 'Michael Torres',
-    email: 'michael.torres@company.com',
-    department: 'Technology',
-    skills: ['Engineering Management', 'Architecture', 'Agile', 'Cloud'],
-    matchScore: 92,
-  },
-  {
-    id: 'emp-3',
-    name: 'Jennifer Walsh',
-    email: 'jennifer.walsh@company.com',
-    department: 'Operations',
-    skills: ['Operations', 'Process Improvement', 'Supply Chain', 'Analytics'],
-    matchScore: 88,
-  },
-  {
-    id: 'emp-4',
-    name: 'David Kim',
-    email: 'david.kim@company.com',
-    department: 'Finance',
-    skills: ['Financial Planning', 'Accounting', 'Risk Management', 'Budgeting'],
-    matchScore: 90,
-  },
-  {
-    id: 'emp-5',
-    name: 'Emily Rodriguez',
-    email: 'emily.rodriguez@company.com',
-    department: 'HR',
-    skills: ['Talent Management', 'Recruiting', 'Employee Relations', 'Compensation'],
-    matchScore: 87,
-  },
-  {
-    id: 'emp-6',
-    name: 'James Wright',
-    email: 'james.wright@company.com',
-    department: 'Technology',
-    skills: ['Software Development', 'React', 'Node.js', 'AWS'],
-    matchScore: 85,
-  },
-  {
-    id: 'emp-7',
-    name: 'Lisa Park',
-    email: 'lisa.park@company.com',
-    department: 'Technology',
-    skills: ['Data Science', 'Machine Learning', 'Python', 'SQL'],
-    matchScore: 91,
-  },
-  {
-    id: 'emp-8',
-    name: 'Robert Johnson',
-    email: 'robert.johnson@company.com',
-    department: 'Sales',
-    skills: ['Sales Leadership', 'Account Management', 'Negotiation', 'CRM'],
-    matchScore: 86,
-  },
-  {
-    id: 'emp-9',
-    name: 'Amanda Foster',
-    email: 'amanda.foster@company.com',
-    department: 'Marketing',
-    skills: ['Digital Marketing', 'Brand Strategy', 'Analytics', 'Content'],
-    matchScore: 84,
-  },
-  {
-    id: 'emp-10',
-    name: 'Chris Martinez',
-    email: 'chris.martinez@company.com',
-    department: 'Technology',
-    skills: ['DevOps', 'Kubernetes', 'CI/CD', 'Security'],
-    matchScore: 89,
-  },
-];
+const firstNames = ['Sarah', 'Michael', 'Jennifer', 'David', 'Emily', 'James', 'Lisa', 'Robert', 'Amanda', 'Chris', 'Jessica', 'Daniel', 'Ashley', 'Matthew', 'Stephanie', 'Andrew', 'Nicole', 'Joshua', 'Elizabeth', 'Ryan', 'Megan', 'Brandon', 'Rachel', 'Kevin', 'Lauren', 'Justin', 'Samantha', 'Tyler', 'Kayla', 'Aaron', 'Brittany', 'Adam', 'Hannah', 'Nathan', 'Olivia', 'Jacob', 'Emma', 'Ethan', 'Ava', 'Noah', 'Sophia', 'Mason', 'Isabella', 'William', 'Mia', 'Liam', 'Charlotte', 'Benjamin', 'Amelia', 'Alexander'];
+const lastNames = ['Chen', 'Torres', 'Walsh', 'Kim', 'Rodriguez', 'Wright', 'Park', 'Johnson', 'Foster', 'Martinez', 'Smith', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Wilson', 'Anderson', 'Taylor', 'Thomas', 'Jackson', 'White', 'Harris', 'Martin', 'Thompson', 'Moore', 'Young', 'Allen', 'King', 'Scott', 'Green', 'Baker', 'Adams', 'Nelson', 'Hill', 'Ramirez', 'Campbell', 'Mitchell', 'Roberts', 'Carter', 'Phillips', 'Evans', 'Turner', 'Torres', 'Parker', 'Collins', 'Edwards', 'Stewart', 'Flores'];
+const departments = ['Executive', 'Technology', 'Operations', 'Finance', 'HR', 'Sales', 'Marketing'];
+const allSkills = ['Leadership', 'Strategy', 'Operations', 'Finance', 'Engineering Management', 'Architecture', 'Agile', 'Cloud', 'Process Improvement', 'Supply Chain', 'Analytics', 'Financial Planning', 'Accounting', 'Risk Management', 'Budgeting', 'Talent Management', 'Recruiting', 'Employee Relations', 'Compensation', 'Software Development', 'React', 'Node.js', 'AWS', 'Data Science', 'Machine Learning', 'Python', 'SQL', 'Sales Leadership', 'Account Management', 'Negotiation', 'CRM', 'Digital Marketing', 'Brand Strategy', 'Content', 'DevOps', 'Kubernetes', 'CI/CD', 'Security', 'Communication', 'Project Management'];
+
+const generateEmployee = (id: number): Employee => {
+  const firstName = firstNames[id % firstNames.length];
+  const lastName = lastNames[(id * 7) % lastNames.length];
+  const dept = departments[id % departments.length];
+  const numSkills = 2 + (id % 4);
+  const skills: string[] = [];
+  for (let i = 0; i < numSkills; i++) {
+    skills.push(allSkills[(id + i * 3) % allSkills.length]);
+  }
+  return {
+    id: `emp-${id}`,
+    name: `${firstName} ${lastName}`,
+    email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@company.com`,
+    department: dept,
+    skills,
+    matchScore: 70 + (id % 30),
+  };
+};
+
+export const mockEmployees: Employee[] = Array.from({ length: 110 }, (_, i) => generateEmployee(i + 1));
 
 const mockPositions: Position[] = [
   {
@@ -167,98 +110,100 @@ const mockPositions: Position[] = [
 ];
 
 export const createBaselineScenario = (): Scenario => {
-  const nodes: Record<string, OrgNode> = {
-    'node-1': {
-      id: 'node-1',
-      position: mockPositions[0], // CEO
-      employee: mockEmployees[0], // Sarah Chen
-      parentId: null,
-      children: ['node-2', 'node-3', 'node-4', 'node-5'],
-      x: 400,
-      y: 50,
-    },
-    'node-2': {
-      id: 'node-2',
-      position: mockPositions[1], // CTO
-      employee: mockEmployees[1], // Michael Torres
-      parentId: 'node-1',
-      children: ['node-6', 'node-7', 'node-10'],
-      x: 100,
-      y: 180,
-    },
-    'node-3': {
-      id: 'node-3',
-      position: mockPositions[2], // COO
-      employee: mockEmployees[2], // Jennifer Walsh
-      parentId: 'node-1',
+  const nodes: Record<string, OrgNode> = {};
+  let nodeCounter = 1;
+  let employeeIndex = 0;
+
+  const createNode = (positionIndex: number, parentId: string | null, x: number, y: number): string => {
+    const nodeId = `node-${nodeCounter++}`;
+    nodes[nodeId] = {
+      id: nodeId,
+      position: mockPositions[positionIndex % mockPositions.length],
+      employee: mockEmployees[employeeIndex++],
+      parentId,
       children: [],
-      x: 300,
-      y: 180,
-    },
-    'node-4': {
-      id: 'node-4',
-      position: mockPositions[3], // CFO
-      employee: mockEmployees[3], // David Kim
-      parentId: 'node-1',
-      children: [],
-      x: 500,
-      y: 180,
-    },
-    'node-5': {
-      id: 'node-5',
-      position: mockPositions[4], // CHRO
-      employee: mockEmployees[4], // Emily Rodriguez
-      parentId: 'node-1',
-      children: ['node-8', 'node-9'],
-      x: 700,
-      y: 180,
-    },
-    'node-6': {
-      id: 'node-6',
-      position: mockPositions[5], // VP Engineering
-      employee: mockEmployees[5], // James Wright
-      parentId: 'node-2',
-      children: [],
-      x: 50,
-      y: 310,
-    },
-    'node-7': {
-      id: 'node-7',
-      position: mockPositions[6], // VP Data Science
-      employee: mockEmployees[6], // Lisa Park
-      parentId: 'node-2',
-      children: [],
-      x: 150,
-      y: 310,
-    },
-    'node-8': {
-      id: 'node-8',
-      position: mockPositions[7], // VP Sales
-      employee: mockEmployees[7], // Robert Johnson
-      parentId: 'node-5',
-      children: [],
-      x: 600,
-      y: 310,
-    },
-    'node-9': {
-      id: 'node-9',
-      position: mockPositions[8], // VP Marketing - OPEN
-      employee: undefined,
-      parentId: 'node-5',
-      children: [],
-      x: 700,
-      y: 310,
-    },
-    'node-10': {
-      id: 'node-10',
-      position: mockPositions[9], // Director DevOps
-      employee: mockEmployees[9], // Chris Martinez
-      parentId: 'node-2',
-      children: [],
-      x: 250,
-      y: 310,
-    },
+      x,
+      y,
+    };
+    return nodeId;
   };
+
+  // CEO at root
+  const ceoId = createNode(0, null, 400, 50);
+
+  // C-Suite (4 direct reports)
+  const ctoId = createNode(1, ceoId, 100, 180);
+  const cooId = createNode(2, ceoId, 300, 180);
+  const cfoId = createNode(3, ceoId, 500, 180);
+  const chroId = createNode(4, ceoId, 700, 180);
+  nodes[ceoId].children = [ctoId, cooId, cfoId, chroId];
+
+  // VPs under CTO (3 VPs)
+  const vpEng = createNode(5, ctoId, 50, 310);
+  const vpData = createNode(6, ctoId, 150, 310);
+  const dirDevOps = createNode(9, ctoId, 250, 310);
+  nodes[ctoId].children = [vpEng, vpData, dirDevOps];
+
+  // VPs under CHRO
+  const vpSales = createNode(7, chroId, 600, 310);
+  const vpMarketing = createNode(8, chroId, 700, 310);
+  nodes[chroId].children = [vpSales, vpMarketing];
+
+  // Directors and Managers under VPs - Engineering team (15 people)
+  const engTeam: string[] = [];
+  for (let i = 0; i < 15; i++) {
+    const nodeId = createNode(5, vpEng, 0, 440);
+    engTeam.push(nodeId);
+  }
+  nodes[vpEng].children = engTeam;
+
+  // Data Science team (12 people)
+  const dataTeam: string[] = [];
+  for (let i = 0; i < 12; i++) {
+    const nodeId = createNode(6, vpData, 0, 440);
+    dataTeam.push(nodeId);
+  }
+  nodes[vpData].children = dataTeam;
+
+  // DevOps team (8 people)
+  const devOpsTeam: string[] = [];
+  for (let i = 0; i < 8; i++) {
+    const nodeId = createNode(9, dirDevOps, 0, 440);
+    devOpsTeam.push(nodeId);
+  }
+  nodes[dirDevOps].children = devOpsTeam;
+
+  // COO team (15 people)
+  const opsTeam: string[] = [];
+  for (let i = 0; i < 15; i++) {
+    const nodeId = createNode(2, cooId, 0, 310);
+    opsTeam.push(nodeId);
+  }
+  nodes[cooId].children = opsTeam;
+
+  // CFO team (10 people)
+  const financeTeam: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const nodeId = createNode(3, cfoId, 0, 310);
+    financeTeam.push(nodeId);
+  }
+  nodes[cfoId].children = financeTeam;
+
+  // Sales team (20 people)
+  const salesTeam: string[] = [];
+  for (let i = 0; i < 20; i++) {
+    const nodeId = createNode(7, vpSales, 0, 440);
+    salesTeam.push(nodeId);
+  }
+  nodes[vpSales].children = salesTeam;
+
+  // Marketing team (10 people)
+  const marketingTeam: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const nodeId = createNode(8, vpMarketing, 0, 440);
+    marketingTeam.push(nodeId);
+  }
+  nodes[vpMarketing].children = marketingTeam;
 
   return {
     id: 'baseline',
@@ -266,7 +211,7 @@ export const createBaselineScenario = (): Scenario => {
     isBaseline: true,
     createdAt: new Date(),
     nodes,
-    rootId: 'node-1',
+    rootId: ceoId,
     freeAgents: [],
   };
 };
