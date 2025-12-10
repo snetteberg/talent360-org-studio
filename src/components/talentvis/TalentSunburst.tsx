@@ -21,13 +21,33 @@ interface SunburstSegment {
   children: SunburstSegment[];
 }
 
-// Simulated skill proficiency data
-const getSkillProficiency = (employeeId: string, skill: string): number => {
+// Simulated skill proficiency data - gives most employees coverage for most skills
+const getSkillProficiency = (employeeId: string, skill: string): { hasSkill: boolean; proficiency: number } => {
   const hash = (employeeId + skill).split('').reduce((a, b) => {
     a = ((a << 5) - a) + b.charCodeAt(0);
     return a & a;
   }, 0);
-  return Math.abs(hash % 71) + 30;
+  
+  // 85% chance of having any skill at some level
+  const hasSkill = Math.abs(hash % 100) < 85;
+  if (!hasSkill) {
+    return { hasSkill: false, proficiency: 0 };
+  }
+  
+  // Distribute proficiency: 20% expert, 35% advanced, 30% intermediate, 15% beginner
+  const profRand = Math.abs((hash * 17) % 100);
+  let proficiency: number;
+  if (profRand < 20) {
+    proficiency = 90 + Math.abs(hash % 10); // 90-99 Expert
+  } else if (profRand < 55) {
+    proficiency = 70 + Math.abs(hash % 20); // 70-89 Advanced
+  } else if (profRand < 85) {
+    proficiency = 50 + Math.abs(hash % 20); // 50-69 Intermediate
+  } else {
+    proficiency = 30 + Math.abs(hash % 20); // 30-49 Beginner
+  }
+  
+  return { hasSkill: true, proficiency };
 };
 
 const getProficiencyColor = (proficiency: number | undefined, hasSkill: boolean, isVacant: boolean, skillSelected: boolean): string => {
@@ -70,13 +90,15 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
 
       const employee = node.employee;
       const isVacant = !employee;
-      const hasSkill = employee && selectedSkill 
-        ? employee.skills.includes(selectedSkill) 
-        : false;
       
-      const proficiency = employee && selectedSkill && hasSkill
-        ? getSkillProficiency(employee.id, selectedSkill)
-        : undefined;
+      let hasSkill = false;
+      let proficiency: number | undefined = undefined;
+      
+      if (employee && selectedSkill) {
+        const skillData = getSkillProficiency(employee.id, selectedSkill);
+        hasSkill = skillData.hasSkill;
+        proficiency = skillData.hasSkill ? skillData.proficiency : undefined;
+      }
 
       const fill = getProficiencyColor(proficiency, hasSkill, isVacant, !!selectedSkill);
 
