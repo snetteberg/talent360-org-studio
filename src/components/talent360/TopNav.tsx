@@ -2,8 +2,8 @@ import { cn } from '@/lib/utils';
 import { Building2 } from 'lucide-react';
 
 interface TopNavProps {
-  activeTab: 'workforce' | 'orgbuilder';
-  onTabChange: (tab: 'workforce' | 'orgbuilder') => void;
+  activeTab: 'workforce' | 'orgbuilder' | 'talentvis';
+  onTabChange: (tab: 'workforce' | 'orgbuilder' | 'talentvis') => void;
 }
 
 export function TopNav({ activeTab, onTabChange }: TopNavProps) {
@@ -49,6 +49,15 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
             )}
           >
             OrgBuilder
+          </button>
+          <button
+            onClick={() => onTabChange('talentvis')}
+            className={cn(
+              'nav-tab',
+              activeTab === 'talentvis' && 'nav-tab-active'
+            )}
+          >
+            Talent Visualization
           </button>
         </div>
       </nav>

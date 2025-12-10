@@ -7,9 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export default function WorkforcePlanning() {
   const navigate = useNavigate();
 
-  const handleTabChange = (tab: 'workforce' | 'orgbuilder') => {
+  const handleTabChange = (tab: 'workforce' | 'orgbuilder' | 'talentvis') => {
     if (tab === 'orgbuilder') {
       navigate('/orgbuilder');
+    } else if (tab === 'talentvis') {
+      navigate('/talent-visualization');
     }
   };
 

@@ -10,9 +10,11 @@ export default function OrgBuilder() {
   const [viewMode, setViewMode] = useState<ViewMode>('landing');
   const [startedFromBaseline, setStartedFromBaseline] = useState(true);
 
-  const handleTabChange = (tab: 'workforce' | 'orgbuilder') => {
+  const handleTabChange = (tab: 'workforce' | 'orgbuilder' | 'talentvis') => {
     if (tab === 'workforce') {
       navigate('/');
+    } else if (tab === 'talentvis') {
+      navigate('/talent-visualization');
     }
   };
 
