@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import WorkforcePlanning from "./pages/WorkforcePlanning";
 import OrgBuilder from "./pages/OrgBuilder";
+import TalentVisualization from "./pages/TalentVisualization";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,6 +19,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<WorkforcePlanning />} />
           <Route path="/orgbuilder" element={<OrgBuilder />} />
+          <Route path="/talent-visualization" element={<TalentVisualization />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
