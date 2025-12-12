@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Scenario } from '@/types/org-builder';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 interface TalentSunburstProps {
   scenario: Scenario;
@@ -18,6 +20,7 @@ interface SunburstSegment {
   proficiency?: number;
   hasSkill?: boolean;
   isVacant?: boolean;
+  hasChildren: boolean;
   children: SunburstSegment[];
 }
 
@@ -73,10 +76,26 @@ const getProficiencyColor = (proficiency: number | undefined, hasSkill: boolean,
 
 export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps) {
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+
+  // Get the focused node's employee name for center label
+  const focusedNodeName = useMemo(() => {
+    if (!focusedNodeId) return null;
+    const node = scenario.nodes[focusedNodeId];
+    return node?.employee?.name || node?.position.title || 'Unknown';
+  }, [focusedNodeId, scenario.nodes]);
+
+  // Get root employee name
+  const rootEmployeeName = useMemo(() => {
+    if (!scenario.rootId) return 'Organization';
+    const rootNode = scenario.nodes[scenario.rootId];
+    return rootNode?.employee?.name || 'Organization';
+  }, [scenario.rootId, scenario.nodes]);
 
   const { segments, maxDepth } = useMemo(() => {
     const { nodes, rootId } = scenario;
-    if (!rootId) return { segments: [], maxDepth: 0 };
+    const startNodeId = focusedNodeId || rootId;
+    if (!startNodeId || !nodes[startNodeId]) return { segments: [], maxDepth: 0 };
 
     let maxDepthFound = 0;
 
@@ -151,16 +170,28 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
         proficiency,
         hasSkill,
         isVacant,
+        hasChildren: node.children.length > 0,
         children,
       };
     };
 
-    const root = buildSegment(rootId, 0, 0, 360);
+    const root = buildSegment(startNodeId, 0, 0, 360);
     return { 
       segments: root ? [root] : [], 
       maxDepth: maxDepthFound 
     };
-  }, [scenario, selectedSkill]);
+  }, [scenario, selectedSkill, focusedNodeId]);
+
+  const handleSegmentClick = (segment: SunburstSegment) => {
+    // Only drill down if the segment has children
+    if (segment.hasChildren) {
+      setFocusedNodeId(segment.id);
+    }
+  };
+
+  const handleReturnToFullView = () => {
+    setFocusedNodeId(null);
+  };
 
   const renderSegments = (
     segment: SunburstSegment,
@@ -200,7 +231,7 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
     const labelX = centerX + labelRadius * Math.cos(midAngle);
     const labelY = centerY + labelRadius * Math.sin(midAngle);
     
-    // Only show labels for depth 1 (direct reports to CEO)
+    // Only show labels for depth 1 (direct reports to focused node)
     const showLabel = segment.depth === 1 && angleSpan > 15 && ringWidth > 30;
     
     elements.push(
@@ -216,12 +247,13 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
                 opacity={isHovered ? 1 : 0.85}
                 style={{ 
                   transition: 'opacity 0.2s, transform 0.2s',
-                  cursor: 'pointer',
+                  cursor: segment.hasChildren ? 'pointer' : 'default',
                   transform: isHovered ? `scale(1.02)` : 'scale(1)',
                   transformOrigin: `${centerX}px ${centerY}px`
                 }}
                 onMouseEnter={() => setHoveredSegment(segment.id)}
                 onMouseLeave={() => setHoveredSegment(null)}
+                onClick={() => handleSegmentClick(segment)}
               />
               {showLabel && (
                 <text
@@ -248,6 +280,9 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
             <p className="text-muted-foreground text-xs">{segment.title}</p>
             {segment.isVacant && (
               <p className="text-orange-500 text-xs mt-1">Position Vacant</p>
+            )}
+            {segment.hasChildren && (
+              <p className="text-primary text-xs mt-1">Click to drill down</p>
             )}
             {selectedSkill && !segment.isVacant && (
               <div className="mt-2 pt-2 border-t border-border">
@@ -291,9 +326,26 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
   const maxRadius = (size / 2) - 20;
   const ringWidth = (maxRadius - innerHoleRadius) / (maxDepth + 1);
 
+  const centerLabel = focusedNodeName || rootEmployeeName;
+
   return (
-    <div className="flex flex-col items-center">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <div className="relative flex flex-col items-center">
+      {/* Return to full view button */}
+      {focusedNodeId && (
+        <div className="absolute top-0 left-0 z-10">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReturnToFullView}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Return to full organization view
+          </Button>
+        </div>
+      )}
+
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className={focusedNodeId ? 'mt-10' : ''}>
         {segments.map(segment => renderSegments(segment, centerX, centerY, innerHoleRadius, ringWidth))}
         {/* Center circle with label */}
         <circle
@@ -313,7 +365,7 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
           fontSize={10}
           fontWeight={500}
         >
-          Sarah Chen
+          {centerLabel.length > 12 ? centerLabel.slice(0, 12) + '...' : centerLabel}
         </text>
       </svg>
       
