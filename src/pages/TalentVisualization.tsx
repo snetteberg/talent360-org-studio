@@ -24,11 +24,11 @@ export default function TalentVisualization() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       <TopNav activeTab="talentvis" onTabChange={handleTabChange} />
       
-      <main className="container mx-auto px-6 py-8">
-        <div className="mb-6">
+      <main className="flex-1 container mx-auto px-6 py-6 flex flex-col overflow-hidden">
+        <div className="mb-4 shrink-0">
           <h1 className="text-2xl font-semibold text-foreground mb-2">
             Talent Visualization
           </h1>
@@ -37,9 +37,9 @@ export default function TalentVisualization() {
           </p>
         </div>
 
-        <div className="flex gap-6 items-stretch">
+        <div className="flex gap-6 flex-1 min-h-0">
           {/* Skill Filter Sidebar */}
-          <div className="w-64 shrink-0 flex">
+          <div className="w-64 shrink-0">
             <SkillFilter
               skills={allSkills}
               selectedSkill={selectedSkill}
@@ -48,7 +48,7 @@ export default function TalentVisualization() {
           </div>
 
           {/* Sunburst Chart */}
-          <div className="flex-1 bg-card rounded-lg border border-border p-6">
+          <div className="flex-1 bg-card rounded-lg border border-border p-6 overflow-auto">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-medium text-foreground">
                 Organization Sunburst
