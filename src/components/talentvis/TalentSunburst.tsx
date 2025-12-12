@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { Scenario } from '@/types/org-builder';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ArrowLeft, Search, X } from 'lucide-react';
 
 interface TalentSunburstProps {
   scenario: Scenario;
@@ -77,6 +78,47 @@ const getProficiencyColor = (proficiency: number | undefined, hasSkill: boolean,
 export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps) {
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Get all people in the org for search
+  const allPeople = useMemo(() => {
+    return Object.entries(scenario.nodes)
+      .filter(([_, node]) => node.employee)
+      .map(([id, node]) => ({
+        id,
+        name: node.employee!.name,
+        title: node.position.title,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [scenario.nodes]);
+
+  // Filter people based on search query
+  const filteredPeople = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    return allPeople.filter(
+      p => p.name.toLowerCase().includes(query) || p.title.toLowerCase().includes(query)
+    ).slice(0, 5);
+  }, [allPeople, searchQuery]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectPerson = (personId: string) => {
+    setFocusedNodeId(personId);
+    setSearchQuery('');
+    setShowSuggestions(false);
+  };
 
   // Get the center node info (either focused or root)
   const centerNodeInfo = useMemo(() => {
@@ -340,22 +382,65 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
 
   return (
     <div className="relative flex flex-col items-center h-full">
-      {/* Return to full view button */}
-      {focusedNodeId && (
-        <div className="absolute top-0 left-0 z-10">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleReturnToFullView}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Return to full organization view
-          </Button>
+      {/* Top controls: Return button and Search */}
+      <div className="shrink-0 w-full flex items-center justify-between gap-4 pb-2">
+        {/* Return to full view button */}
+        <div className="flex-1">
+          {focusedNodeId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReturnToFullView}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Return to full view
+            </Button>
+          )}
         </div>
-      )}
 
-      <div className={`flex-1 flex items-center justify-center w-full min-h-0 ${focusedNodeId ? 'pt-10' : ''}`}>
+        {/* Search input */}
+        <div ref={searchRef} className="relative w-64">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search person..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            className="pl-8 pr-8 h-8 text-sm"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setShowSuggestions(false);
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          {showSuggestions && filteredPeople.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-20 overflow-hidden">
+              {filteredPeople.map((person) => (
+                <button
+                  key={person.id}
+                  onClick={() => handleSelectPerson(person.id)}
+                  className="w-full px-3 py-2 text-left hover:bg-accent transition-colors"
+                >
+                  <p className="text-sm font-medium text-foreground">{person.name}</p>
+                  <p className="text-xs text-muted-foreground">{person.title}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center w-full min-h-0">
         <svg 
           viewBox={`0 0 ${size} ${size}`} 
           className="w-full h-full max-h-full"
