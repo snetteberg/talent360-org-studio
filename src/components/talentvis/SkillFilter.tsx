@@ -19,7 +19,7 @@ export function SkillFilter({ skills, selectedSkill, onSelectSkill }: SkillFilte
   );
 
   return (
-    <div className="bg-card rounded-lg border border-border p-4">
+    <div className="bg-card rounded-lg border border-border p-4 flex flex-col w-full h-full">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-medium text-foreground">Filter by Skill</h3>
         {selectedSkill && (
@@ -45,7 +45,7 @@ export function SkillFilter({ skills, selectedSkill, onSelectSkill }: SkillFilte
         />
       </div>
 
-      <ScrollArea className="h-[400px]">
+      <ScrollArea className="flex-1">
         <div className="space-y-1">
           {filteredSkills.map(skill => (
             <button
