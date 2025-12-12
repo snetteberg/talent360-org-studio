@@ -37,9 +37,9 @@ export default function TalentVisualization() {
           </p>
         </div>
 
-        <div className="flex gap-6">
+        <div className="flex gap-6 items-stretch">
           {/* Skill Filter Sidebar */}
-          <div className="w-64 shrink-0">
+          <div className="w-64 shrink-0 flex">
             <SkillFilter
               skills={allSkills}
               selectedSkill={selectedSkill}
