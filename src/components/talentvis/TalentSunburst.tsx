@@ -410,25 +410,10 @@ export function TalentSunburst({ scenario, selectedSkills }: TalentSunburstProps
   const ringWidth = (maxRadius - innerHoleRadius) / (maxDepth + 1);
 
   return (
-    <div className="relative flex flex-col items-center h-full">
-      {/* Top controls: Return button and Search */}
-      <div className="shrink-0 w-full flex items-center justify-between gap-4 pb-2">
-        {/* Return to full view button */}
-        <div className="flex-1">
-          {focusedNodeId && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReturnToFullView}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Return to full view
-            </Button>
-          )}
-        </div>
-
-        {/* Search input */}
+    <div className="relative flex flex-col h-full">
+      {/* Top controls: Search and Return button */}
+      <div className="shrink-0 w-full flex items-center gap-4 pb-3">
+        {/* Search input - left aligned */}
         <div ref={searchRef} className="relative w-64">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -467,6 +452,19 @@ export function TalentSunburst({ scenario, selectedSkills }: TalentSunburstProps
             </div>
           )}
         </div>
+
+        {/* Return to full view button */}
+        {focusedNodeId && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReturnToFullView}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Return to full view
+          </Button>
+        )}
       </div>
 
       <div className="flex-1 flex items-center justify-center w-full min-h-0">

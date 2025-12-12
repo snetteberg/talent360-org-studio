@@ -62,22 +62,27 @@ export function SkillFilter({ selectedSkill, onSelectSkill }: SkillFilterProps) 
     return selectedSkill?.type === 'category' && selectedSkill.categoryId === categoryId;
   };
 
-  // Filter families based on search
+  // Filter based on search - matches both categories and families
   const searchLower = search.toLowerCase();
   const filteredHierarchy = search
-    ? skillHierarchy.map(cat => ({
-        ...cat,
-        families: cat.families.filter(f => 
+    ? skillHierarchy.map(cat => {
+        const matchesCategory = cat.name.toLowerCase().includes(searchLower);
+        const matchingFamilies = cat.families.filter(f => 
           f.name.toLowerCase().includes(searchLower)
-        ),
-        matchesCategory: cat.name.toLowerCase().includes(searchLower),
-      })).filter(cat => cat.families.length > 0 || cat.matchesCategory)
+        );
+        return {
+          ...cat,
+          // Show all families if category matches, otherwise only matching families
+          families: matchesCategory ? cat.families : matchingFamilies,
+          matchesCategory,
+        };
+      }).filter(cat => cat.families.length > 0 || cat.matchesCategory)
     : skillHierarchy.map(cat => ({ ...cat, matchesCategory: false }));
 
   return (
     <div className="bg-card rounded-lg border border-border p-4 flex flex-col w-full h-full">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium text-foreground">Filter by Skill</h3>
+        <h3 className="font-medium text-foreground">Skill Selection</h3>
         {selectedSkill && (
           <Button
             variant="ghost"

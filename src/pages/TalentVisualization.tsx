@@ -33,30 +33,19 @@ export default function TalentVisualization() {
         </div>
 
         <div className="flex gap-6 flex-1 min-h-0">
-          {/* Skill Filter Sidebar */}
-          <div className="w-72 shrink-0">
+          {/* Skill Filter Sidebar - 1/3 width */}
+          <div className="w-1/3 shrink-0">
             <SkillFilter
               selectedSkill={selectedSkill}
               onSelectSkill={setSelectedSkill}
             />
           </div>
 
-          {/* Sunburst Chart */}
-          <div className="flex-1 bg-card rounded-lg border border-border p-6 flex flex-col overflow-hidden">
-            <div className="mb-4 flex items-center justify-between shrink-0">
-              <h2 className="text-lg font-medium text-foreground">
-                Organization Sunburst
-              </h2>
-              {selectedSkill && (
-                <span className="text-sm text-muted-foreground">
-                  Showing: <span className="font-medium text-primary">
-                    {selectedSkill.type === 'category' 
-                      ? `${selectedSkill.skillNames.length} skills (avg)`
-                      : selectedSkill.familyName}
-                  </span>
-                </span>
-              )}
-            </div>
+          {/* Sunburst Chart - 2/3 width */}
+          <div className="w-2/3 bg-card rounded-lg border border-border p-6 flex flex-col overflow-hidden">
+            <h2 className="text-lg font-medium text-foreground mb-4 shrink-0">
+              Organization Sunburst
+            </h2>
             <div className="flex-1 min-h-0">
               <TalentSunburst
                 scenario={scenario}
