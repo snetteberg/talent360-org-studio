@@ -325,23 +325,21 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
 
   if (segments.length === 0) {
     return (
-      <div className="h-[500px] flex items-center justify-center text-muted-foreground">
+      <div className="flex-1 flex items-center justify-center text-muted-foreground">
         No organization data available
       </div>
     );
   }
 
-  const size = 500;
+  const size = 700;
   const centerX = size / 2;
   const centerY = size / 2;
-  const innerHoleRadius = 40;
+  const innerHoleRadius = 50;
   const maxRadius = (size / 2) - 20;
   const ringWidth = (maxRadius - innerHoleRadius) / (maxDepth + 1);
 
-  
-
   return (
-    <div className="relative flex flex-col items-center">
+    <div className="relative flex flex-col items-center flex-1">
       {/* Return to full view button */}
       {focusedNodeId && (
         <div className="absolute top-0 left-0 z-10">
@@ -357,7 +355,11 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
         </div>
       )}
 
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className={focusedNodeId ? 'mt-10' : ''}>
+      <svg 
+        viewBox={`0 0 ${size} ${size}`} 
+        className={`w-full max-w-[700px] h-auto ${focusedNodeId ? 'mt-10' : ''}`}
+        preserveAspectRatio="xMidYMid meet"
+      >
         {/* Render children of root segment directly, skipping the root segment itself */}
         {segments[0]?.children.map(child => renderSegments(child, centerX, centerY, innerHoleRadius, ringWidth))}
         {/* Center circle with label */}
