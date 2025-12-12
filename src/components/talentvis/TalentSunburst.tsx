@@ -21,45 +21,54 @@ interface SunburstSegment {
   children: SunburstSegment[];
 }
 
-// Simulated skill proficiency data - gives most employees coverage for most skills
+// Simulated skill proficiency data - 0 to 4 scale
 const getSkillProficiency = (employeeId: string, skill: string): { hasSkill: boolean; proficiency: number } => {
   const hash = (employeeId + skill).split('').reduce((a, b) => {
     a = ((a << 5) - a) + b.charCodeAt(0);
     return a & a;
   }, 0);
   
-  // 85% chance of having any skill at some level
-  const hasSkill = Math.abs(hash % 100) < 85;
+  // 90% chance of having any skill at some level (0-4)
+  const hasSkill = Math.abs(hash % 100) < 90;
   if (!hasSkill) {
     return { hasSkill: false, proficiency: 0 };
   }
   
-  // Distribute proficiency: 20% expert, 35% advanced, 30% intermediate, 15% beginner
+  // Distribute proficiency on 0-4 scale
   const profRand = Math.abs((hash * 17) % 100);
   let proficiency: number;
-  if (profRand < 20) {
-    proficiency = 90 + Math.abs(hash % 10); // 90-99 Expert
-  } else if (profRand < 55) {
-    proficiency = 70 + Math.abs(hash % 20); // 70-89 Advanced
+  if (profRand < 15) {
+    proficiency = 4; // Top level
+  } else if (profRand < 35) {
+    proficiency = 3;
+  } else if (profRand < 60) {
+    proficiency = 2;
   } else if (profRand < 85) {
-    proficiency = 50 + Math.abs(hash % 20); // 50-69 Intermediate
+    proficiency = 1;
   } else {
-    proficiency = 30 + Math.abs(hash % 20); // 30-49 Beginner
+    proficiency = 0;
   }
   
   return { hasSkill: true, proficiency };
 };
 
+// Blue gradient from very light (0) to deep blue (4)
 const getProficiencyColor = (proficiency: number | undefined, hasSkill: boolean, isVacant: boolean, skillSelected: boolean): string => {
   if (isVacant) return 'hsl(var(--muted))';
   if (!skillSelected) return 'hsl(var(--muted))';
   if (!hasSkill) return 'hsl(var(--muted))';
-  if (!proficiency) return 'hsl(var(--muted))';
+  if (proficiency === undefined) return 'hsl(var(--muted))';
   
-  if (proficiency >= 90) return '#10b981'; // Expert - green
-  if (proficiency >= 70) return '#3b82f6'; // Advanced - blue
-  if (proficiency >= 50) return '#f59e0b'; // Intermediate - amber
-  return '#f97316'; // Beginner - orange
+  // Blue gradient: light gray-blue (0) to deep blue (4)
+  const colors = [
+    '#f0f4f8', // 0 - very light blue/gray
+    '#c7d9e8', // 1 - light blue
+    '#7fb3d3', // 2 - medium blue
+    '#3b82c4', // 3 - blue
+    '#1e4976', // 4 - deep blue
+  ];
+  
+  return colors[Math.min(Math.max(proficiency, 0), 4)];
 };
 
 export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps) {
@@ -245,7 +254,7 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
                 <p className="text-xs text-muted-foreground">
                   {selectedSkill}: {' '}
                   {segment.hasSkill ? (
-                    <span className="font-medium text-foreground">{segment.proficiency}%</span>
+                    <span className="font-medium text-foreground">Level {segment.proficiency}</span>
                   ) : (
                     <span className="text-muted-foreground">No skill</span>
                   )}
@@ -308,27 +317,19 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
         </text>
       </svg>
       
-      <div className="mt-4 flex flex-wrap gap-3 justify-center">
-        <div className="flex items-center gap-1.5 text-xs">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }} />
-          <span className="text-muted-foreground">Expert (90%+)</span>
+      <div className="mt-4 flex items-center gap-2 justify-center">
+        <span className="text-xs text-muted-foreground">0</span>
+        <div className="flex h-4 rounded overflow-hidden">
+          <div className="w-8" style={{ backgroundColor: '#f0f4f8' }} />
+          <div className="w-8" style={{ backgroundColor: '#c7d9e8' }} />
+          <div className="w-8" style={{ backgroundColor: '#7fb3d3' }} />
+          <div className="w-8" style={{ backgroundColor: '#3b82c4' }} />
+          <div className="w-8" style={{ backgroundColor: '#1e4976' }} />
         </div>
-        <div className="flex items-center gap-1.5 text-xs">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }} />
-          <span className="text-muted-foreground">Advanced (70-89%)</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f59e0b' }} />
-          <span className="text-muted-foreground">Intermediate (50-69%)</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f97316' }} />
-          <span className="text-muted-foreground">Beginner (&lt;50%)</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs">
-          <div className="w-3 h-3 rounded bg-muted" />
-          <span className="text-muted-foreground">{selectedSkill ? 'No Skill / Vacant' : 'Select a skill'}</span>
-        </div>
+        <span className="text-xs text-muted-foreground">4</span>
+        <span className="text-xs text-muted-foreground ml-4">
+          {selectedSkill ? 'Proficiency Level' : 'Select a skill to view proficiency'}
+        </span>
       </div>
     </div>
   );
