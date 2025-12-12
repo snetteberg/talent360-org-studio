@@ -311,9 +311,9 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
           dominantBaseline="middle"
           fill="hsl(var(--foreground))"
           fontSize={10}
-          fontWeight={600}
+          fontWeight={500}
         >
-          CEO
+          Sarah Chen
         </text>
       </svg>
       

@@ -64,31 +64,6 @@ export function SkillFilter({ skills, selectedSkill, onSelectSkill }: SkillFilte
         </div>
       </ScrollArea>
 
-      <div className="mt-4 pt-4 border-t border-border">
-        <h4 className="text-xs font-medium text-muted-foreground mb-2">Proficiency Legend</h4>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-4 h-4 rounded bg-emerald-500" />
-            <span className="text-muted-foreground">Expert (90-100%)</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-4 h-4 rounded bg-blue-500" />
-            <span className="text-muted-foreground">Advanced (70-89%)</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-4 h-4 rounded bg-amber-500" />
-            <span className="text-muted-foreground">Intermediate (50-69%)</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-4 h-4 rounded bg-orange-500" />
-            <span className="text-muted-foreground">Beginner (30-49%)</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-4 h-4 rounded bg-muted" />
-            <span className="text-muted-foreground">No skill / Vacant</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
