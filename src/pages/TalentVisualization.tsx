@@ -48,8 +48,8 @@ export default function TalentVisualization() {
           </div>
 
           {/* Sunburst Chart */}
-          <div className="flex-1 bg-card rounded-lg border border-border p-6 overflow-auto">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="flex-1 bg-card rounded-lg border border-border p-6 flex flex-col overflow-hidden">
+            <div className="mb-4 flex items-center justify-between shrink-0">
               <h2 className="text-lg font-medium text-foreground">
                 Organization Sunburst
               </h2>
@@ -59,10 +59,12 @@ export default function TalentVisualization() {
                 </span>
               )}
             </div>
-            <TalentSunburst
-              scenario={scenario}
-              selectedSkill={selectedSkill}
-            />
+            <div className="flex-1 min-h-0">
+              <TalentSunburst
+                scenario={scenario}
+                selectedSkill={selectedSkill}
+              />
+            </div>
           </div>
         </div>
       </main>

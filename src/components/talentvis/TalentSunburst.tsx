@@ -339,7 +339,7 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
   const ringWidth = (maxRadius - innerHoleRadius) / (maxDepth + 1);
 
   return (
-    <div className="relative flex flex-col items-center flex-1">
+    <div className="relative flex flex-col items-center h-full">
       {/* Return to full view button */}
       {focusedNodeId && (
         <div className="absolute top-0 left-0 z-10">
@@ -355,37 +355,39 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
         </div>
       )}
 
-      <svg 
-        viewBox={`0 0 ${size} ${size}`} 
-        className={`w-full max-w-[700px] h-auto ${focusedNodeId ? 'mt-10' : ''}`}
-        preserveAspectRatio="xMidYMid meet"
-      >
-        {/* Render children of root segment directly, skipping the root segment itself */}
-        {segments[0]?.children.map(child => renderSegments(child, centerX, centerY, innerHoleRadius, ringWidth))}
-        {/* Center circle with label */}
-        <circle
-          cx={centerX}
-          cy={centerY}
-          r={innerHoleRadius}
-          fill={centerNodeInfo.fill}
-          stroke="hsl(var(--border))"
-          strokeWidth={1}
-        />
-        <text
-          x={centerX}
-          y={centerY}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fill={selectedSkill ? 'white' : 'hsl(var(--foreground))'}
-          fontSize={10}
-          fontWeight={500}
-          style={{ textShadow: selectedSkill ? '0 1px 2px rgba(0,0,0,0.5)' : 'none' }}
+      <div className={`flex-1 flex items-center justify-center w-full min-h-0 ${focusedNodeId ? 'pt-10' : ''}`}>
+        <svg 
+          viewBox={`0 0 ${size} ${size}`} 
+          className="w-full h-full max-h-full"
+          preserveAspectRatio="xMidYMid meet"
         >
-          {centerNodeInfo.name.length > 12 ? centerNodeInfo.name.slice(0, 12) + '...' : centerNodeInfo.name}
-        </text>
-      </svg>
+          {/* Render children of root segment directly, skipping the root segment itself */}
+          {segments[0]?.children.map(child => renderSegments(child, centerX, centerY, innerHoleRadius, ringWidth))}
+          {/* Center circle with label */}
+          <circle
+            cx={centerX}
+            cy={centerY}
+            r={innerHoleRadius}
+            fill={centerNodeInfo.fill}
+            stroke="hsl(var(--border))"
+            strokeWidth={1}
+          />
+          <text
+            x={centerX}
+            y={centerY}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill={selectedSkill ? 'white' : 'hsl(var(--foreground))'}
+            fontSize={14}
+            fontWeight={500}
+            style={{ textShadow: selectedSkill ? '0 1px 2px rgba(0,0,0,0.5)' : 'none' }}
+          >
+            {centerNodeInfo.name.length > 12 ? centerNodeInfo.name.slice(0, 12) + '...' : centerNodeInfo.name}
+          </text>
+        </svg>
+      </div>
       
-      <div className="mt-4 flex items-center gap-2 justify-center">
+      <div className="shrink-0 py-3 flex items-center gap-2 justify-center">
         <span className="text-xs text-muted-foreground">0</span>
         <div className="flex h-4 rounded overflow-hidden">
           <div className="w-8" style={{ backgroundColor: '#f0f4f8' }} />
