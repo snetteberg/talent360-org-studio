@@ -358,7 +358,8 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
       )}
 
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className={focusedNodeId ? 'mt-10' : ''}>
-        {segments.map(segment => renderSegments(segment, centerX, centerY, innerHoleRadius, ringWidth))}
+        {/* Render children of root segment directly, skipping the root segment itself */}
+        {segments[0]?.children.map(child => renderSegments(child, centerX, centerY, innerHoleRadius, ringWidth))}
         {/* Center circle with label */}
         <circle
           cx={centerX}
