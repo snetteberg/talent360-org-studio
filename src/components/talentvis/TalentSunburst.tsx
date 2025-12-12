@@ -78,19 +78,31 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
 
-  // Get the focused node's employee name for center label
-  const focusedNodeName = useMemo(() => {
-    if (!focusedNodeId) return null;
-    const node = scenario.nodes[focusedNodeId];
-    return node?.employee?.name || node?.position.title || 'Unknown';
-  }, [focusedNodeId, scenario.nodes]);
-
-  // Get root employee name
-  const rootEmployeeName = useMemo(() => {
-    if (!scenario.rootId) return 'Organization';
-    const rootNode = scenario.nodes[scenario.rootId];
-    return rootNode?.employee?.name || 'Organization';
-  }, [scenario.rootId, scenario.nodes]);
+  // Get the center node info (either focused or root)
+  const centerNodeInfo = useMemo(() => {
+    const nodeId = focusedNodeId || scenario.rootId;
+    if (!nodeId) return { name: 'Organization', fill: 'hsl(var(--muted))' };
+    
+    const node = scenario.nodes[nodeId];
+    if (!node) return { name: 'Organization', fill: 'hsl(var(--muted))' };
+    
+    const employee = node.employee;
+    const name = employee?.name || node.position.title || 'Unknown';
+    const isVacant = !employee;
+    
+    let hasSkill = false;
+    let proficiency: number | undefined = undefined;
+    
+    if (employee && selectedSkill) {
+      const skillData = getSkillProficiency(employee.id, selectedSkill);
+      hasSkill = skillData.hasSkill;
+      proficiency = skillData.hasSkill ? skillData.proficiency : undefined;
+    }
+    
+    const fill = getProficiencyColor(proficiency, hasSkill, isVacant, !!selectedSkill);
+    
+    return { name, fill };
+  }, [focusedNodeId, scenario.rootId, scenario.nodes, selectedSkill]);
 
   const { segments, maxDepth } = useMemo(() => {
     const { nodes, rootId } = scenario;
@@ -326,7 +338,7 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
   const maxRadius = (size / 2) - 20;
   const ringWidth = (maxRadius - innerHoleRadius) / (maxDepth + 1);
 
-  const centerLabel = focusedNodeName || rootEmployeeName;
+  
 
   return (
     <div className="relative flex flex-col items-center">
@@ -352,7 +364,7 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
           cx={centerX}
           cy={centerY}
           r={innerHoleRadius}
-          fill="hsl(var(--card))"
+          fill={centerNodeInfo.fill}
           stroke="hsl(var(--border))"
           strokeWidth={1}
         />
@@ -361,11 +373,12 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
           y={centerY}
           textAnchor="middle"
           dominantBaseline="middle"
-          fill="hsl(var(--foreground))"
+          fill={selectedSkill ? 'white' : 'hsl(var(--foreground))'}
           fontSize={10}
           fontWeight={500}
+          style={{ textShadow: selectedSkill ? '0 1px 2px rgba(0,0,0,0.5)' : 'none' }}
         >
-          {centerLabel.length > 12 ? centerLabel.slice(0, 12) + '...' : centerLabel}
+          {centerNodeInfo.name.length > 12 ? centerNodeInfo.name.slice(0, 12) + '...' : centerNodeInfo.name}
         </text>
       </svg>
       
