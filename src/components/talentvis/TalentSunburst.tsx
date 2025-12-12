@@ -7,7 +7,7 @@ import { ArrowLeft, Search, X } from 'lucide-react';
 
 interface TalentSunburstProps {
   scenario: Scenario;
-  selectedSkill: string | null;
+  selectedSkills: string[] | null; // Now accepts array of skill names
 }
 
 interface SunburstSegment {
@@ -56,6 +56,29 @@ const getSkillProficiency = (employeeId: string, skill: string): { hasSkill: boo
   return { hasSkill: true, proficiency };
 };
 
+// Get average proficiency across multiple skills
+const getAverageProficiency = (employeeId: string, skills: string[]): { hasSkill: boolean; proficiency: number } => {
+  if (skills.length === 0) return { hasSkill: false, proficiency: 0 };
+  
+  let totalProficiency = 0;
+  let skillCount = 0;
+  
+  for (const skill of skills) {
+    const result = getSkillProficiency(employeeId, skill);
+    if (result.hasSkill) {
+      totalProficiency += result.proficiency;
+      skillCount++;
+    }
+  }
+  
+  if (skillCount === 0) return { hasSkill: false, proficiency: 0 };
+  
+  return {
+    hasSkill: true,
+    proficiency: Math.round(totalProficiency / skillCount),
+  };
+};
+
 // Blue gradient from very light (0) to deep blue (4)
 const getProficiencyColor = (proficiency: number | undefined, hasSkill: boolean, isVacant: boolean, skillSelected: boolean): string => {
   if (isVacant) return 'hsl(var(--muted))';
@@ -75,12 +98,14 @@ const getProficiencyColor = (proficiency: number | undefined, hasSkill: boolean,
   return colors[Math.min(Math.max(proficiency, 0), 4)];
 };
 
-export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps) {
+export function TalentSunburst({ scenario, selectedSkills }: TalentSunburstProps) {
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  const hasSkillSelection = selectedSkills && selectedSkills.length > 0;
 
   // Get all people in the org for search
   const allPeople = useMemo(() => {
@@ -135,16 +160,18 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
     let hasSkill = false;
     let proficiency: number | undefined = undefined;
     
-    if (employee && selectedSkill) {
-      const skillData = getSkillProficiency(employee.id, selectedSkill);
+    if (employee && hasSkillSelection) {
+      const skillData = selectedSkills.length === 1
+        ? getSkillProficiency(employee.id, selectedSkills[0])
+        : getAverageProficiency(employee.id, selectedSkills);
       hasSkill = skillData.hasSkill;
       proficiency = skillData.hasSkill ? skillData.proficiency : undefined;
     }
     
-    const fill = getProficiencyColor(proficiency, hasSkill, isVacant, !!selectedSkill);
+    const fill = getProficiencyColor(proficiency, hasSkill, isVacant, hasSkillSelection);
     
     return { name, fill };
-  }, [focusedNodeId, scenario.rootId, scenario.nodes, selectedSkill]);
+  }, [focusedNodeId, scenario.rootId, scenario.nodes, selectedSkills, hasSkillSelection]);
 
   const { segments, maxDepth } = useMemo(() => {
     const { nodes, rootId } = scenario;
@@ -176,13 +203,15 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
       let hasSkill = false;
       let proficiency: number | undefined = undefined;
       
-      if (employee && selectedSkill) {
-        const skillData = getSkillProficiency(employee.id, selectedSkill);
+      if (employee && hasSkillSelection) {
+        const skillData = selectedSkills.length === 1
+          ? getSkillProficiency(employee.id, selectedSkills[0])
+          : getAverageProficiency(employee.id, selectedSkills);
         hasSkill = skillData.hasSkill;
         proficiency = skillData.hasSkill ? skillData.proficiency : undefined;
       }
 
-      const fill = getProficiencyColor(proficiency, hasSkill, isVacant, !!selectedSkill);
+      const fill = getProficiencyColor(proficiency, hasSkill, isVacant, hasSkillSelection);
 
       const children: SunburstSegment[] = [];
       
@@ -234,7 +263,7 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
       segments: root ? [root] : [], 
       maxDepth: maxDepthFound 
     };
-  }, [scenario, selectedSkill, focusedNodeId]);
+  }, [scenario, selectedSkills, focusedNodeId, hasSkillSelection]);
 
   const handleSegmentClick = (segment: SunburstSegment) => {
     // Only drill down if the segment has children
@@ -338,10 +367,10 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
             {segment.hasChildren && (
               <p className="text-primary text-xs mt-1">Click to drill down</p>
             )}
-            {selectedSkill && !segment.isVacant && (
+            {hasSkillSelection && !segment.isVacant && (
               <div className="mt-2 pt-2 border-t border-border">
                 <p className="text-xs text-muted-foreground">
-                  {selectedSkill}: {' '}
+                  {selectedSkills!.length > 1 ? 'Avg Proficiency' : selectedSkills![0]}: {' '}
                   {segment.hasSkill ? (
                     <span className="font-medium text-foreground">Level {segment.proficiency}</span>
                   ) : (
@@ -462,10 +491,10 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
             y={centerY}
             textAnchor="middle"
             dominantBaseline="middle"
-            fill={selectedSkill ? 'white' : 'hsl(var(--foreground))'}
+            fill={hasSkillSelection ? 'white' : 'hsl(var(--foreground))'}
             fontSize={14}
             fontWeight={500}
-            style={{ textShadow: selectedSkill ? '0 1px 2px rgba(0,0,0,0.5)' : 'none' }}
+            style={{ textShadow: hasSkillSelection ? '0 1px 2px rgba(0,0,0,0.5)' : 'none' }}
           >
             {centerNodeInfo.name.length > 12 ? centerNodeInfo.name.slice(0, 12) + '...' : centerNodeInfo.name}
           </text>
@@ -483,7 +512,7 @@ export function TalentSunburst({ scenario, selectedSkill }: TalentSunburstProps)
         </div>
         <span className="text-xs text-muted-foreground">4</span>
         <span className="text-xs text-muted-foreground ml-4">
-          {selectedSkill ? 'Proficiency Level' : 'Select a skill to view proficiency'}
+          {hasSkillSelection ? 'Proficiency Level' : 'Select a skill to view proficiency'}
         </span>
       </div>
     </div>
