@@ -33,7 +33,7 @@ export default function TalentVisualization() {
             Talent Visualization
           </h1>
           <p className="text-muted-foreground">
-            Explore your organization structure and skill distribution across teams
+            Explore skill distributions across your organization's spans and layers
           </p>
         </div>
 
