@@ -2,18 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TopNav } from '@/components/talent360/TopNav';
 import { TalentSunburst } from '@/components/talentvis/TalentSunburst';
-import { SkillFilter } from '@/components/talentvis/SkillFilter';
-import { createBaselineScenario, mockEmployees } from '@/data/mock-org-data';
+import { SkillFilter, SkillSelection } from '@/components/talentvis/SkillFilter';
+import { createBaselineScenario } from '@/data/mock-org-data';
 
 export default function TalentVisualization() {
   const navigate = useNavigate();
-  const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<SkillSelection | null>(null);
   const scenario = createBaselineScenario();
-
-  // Get all unique skills from employees
-  const allSkills = Array.from(
-    new Set(mockEmployees.flatMap(emp => emp.skills))
-  ).sort();
 
   const handleTabChange = (tab: 'workforce' | 'orgbuilder' | 'talentvis') => {
     if (tab === 'workforce') {
@@ -39,9 +34,8 @@ export default function TalentVisualization() {
 
         <div className="flex gap-6 flex-1 min-h-0">
           {/* Skill Filter Sidebar */}
-          <div className="w-64 shrink-0">
+          <div className="w-72 shrink-0">
             <SkillFilter
-              skills={allSkills}
               selectedSkill={selectedSkill}
               onSelectSkill={setSelectedSkill}
             />
@@ -55,14 +49,18 @@ export default function TalentVisualization() {
               </h2>
               {selectedSkill && (
                 <span className="text-sm text-muted-foreground">
-                  Showing proficiency in: <span className="font-medium text-primary">{selectedSkill}</span>
+                  Showing: <span className="font-medium text-primary">
+                    {selectedSkill.type === 'category' 
+                      ? `${selectedSkill.skillNames.length} skills (avg)`
+                      : selectedSkill.familyName}
+                  </span>
                 </span>
               )}
             </div>
             <div className="flex-1 min-h-0">
               <TalentSunburst
                 scenario={scenario}
-                selectedSkill={selectedSkill}
+                selectedSkills={selectedSkill?.skillNames || null}
               />
             </div>
           </div>
